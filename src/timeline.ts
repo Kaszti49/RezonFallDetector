@@ -8,12 +8,34 @@ export const FPS = 30;
 export const HARD_CAP_SECONDS = 118; // 1:58
 
 export type SceneId =
-  | "S01" | "S02" | "S03" | "S04" | "S05" | "S06" | "S07" | "S08" | "S09" | "S10"
-  | "S11" | "S12" | "S13" | "S14" | "S15" | "S16" | "S17" | "S18" | "S19";
+  | "S01"
+  | "S02"
+  | "S03"
+  | "S04"
+  | "S05"
+  | "S06"
+  | "S07"
+  | "S08"
+  | "S09"
+  | "S10"
+  | "S11"
+  | "S12"
+  | "S13"
+  | "S14"
+  | "S15"
+  | "S16"
+  | "S17"
+  | "S18"
+  | "S19";
 
 // How a scene arrives over the previous one. No crossfades: paper slides, flips, flaps or a cut.
 export type Enter = "cut" | "slide" | "flip" | "flap";
-export const ENTER_FRAMES: Record<Enter, number> = { cut: 0, slide: 16, flip: 18, flap: 16 };
+export const ENTER_FRAMES: Record<Enter, number> = {
+  cut: 0,
+  slide: 16,
+  flip: 18,
+  flap: 16,
+};
 
 export type LineId = (typeof data.captions)[number]["id"];
 type Cue = { line: LineId; at: number };
@@ -28,9 +50,22 @@ const SCENE_DEFS: SceneDef[] = [
   { id: "S06", seconds: 4, enter: "cut", cues: [{ line: "vo_05", at: 0.3 }] },
   { id: "S07", seconds: 7, enter: "cut", cues: [{ line: "vo_06", at: 0.4 }] },
   { id: "S08", seconds: 12, enter: "cut", cues: [{ line: "vo_07", at: 1.3 }] },
-  { id: "S09", seconds: 11, enter: "slide", cues: [{ line: "vo_08", at: 0.6 }] },
+  {
+    id: "S09",
+    seconds: 11,
+    enter: "slide",
+    cues: [{ line: "vo_08", at: 0.6 }],
+  },
   { id: "S10", seconds: 4, enter: "cut", cues: [] },
-  { id: "S11", seconds: 7, enter: "cut", cues: [{ line: "dev_01", at: 1.0 }, { line: "dev_02", at: 4.0 }] },
+  {
+    id: "S11",
+    seconds: 7,
+    enter: "cut",
+    cues: [
+      { line: "dev_01", at: 1.0 },
+      { line: "dev_02", at: 4.0 },
+    ],
+  },
   { id: "S12", seconds: 8, enter: "slide", cues: [{ line: "vo_10", at: 0.6 }] },
   { id: "S13", seconds: 10, enter: "flip", cues: [{ line: "vo_11", at: 5.6 }] },
   { id: "S14", seconds: 4, enter: "flip", cues: [{ line: "vo_12", at: 1.0 }] },
@@ -49,11 +84,15 @@ export const caption = (id: LineId) => {
   if (!c) throw new Error(`No caption for ${id}`);
   return c;
 };
-export const lineText = (id: LineId) => caption(id).pages.map((p) => p.join(" ")).join(" ");
+export const lineText = (id: LineId) =>
+  caption(id)
+    .pages.map((p) => p.join(" "))
+    .join(" ");
 
 const RATE = 4.6; // syllables per second, calm narration
 const syllables = (w: string) => (w.match(/[aáeéiíoóöőuúüű]/gi) ?? []).length;
-const pauseAfter = (w: string) => (/[.!?]$/.test(w) ? 0.38 : /[,:–]$/.test(w) ? 0.24 : 0);
+const pauseAfter = (w: string) =>
+  /[.!?]$/.test(w) ? 0.38 : /[,:–]$/.test(w) ? 0.24 : 0;
 
 export type LineTiming = { duration: number; words: number[] };
 
@@ -74,7 +113,8 @@ const estimate = (id: LineId): LineTiming => {
 // Phase 4 fills this from the measured recordings (duration + word start times, seconds).
 const MEASURED: Partial<Record<LineId, LineTiming>> = {};
 
-export const lineTiming = (id: LineId): LineTiming => MEASURED[id] ?? estimate(id);
+export const lineTiming = (id: LineId): LineTiming =>
+  MEASURED[id] ?? estimate(id);
 
 // ---- Scene table in frames ----
 
@@ -95,9 +135,19 @@ export const scene = (id: SceneId) => {
 };
 
 // Absolute cue table for the caption track (and later the audio track).
-export type AbsoluteCue = { line: LineId; scene: SceneId; from: number; timing: LineTiming };
+export type AbsoluteCue = {
+  line: LineId;
+  scene: SceneId;
+  from: number;
+  timing: LineTiming;
+};
 export const CUES: AbsoluteCue[] = TIMELINE.flatMap((s) =>
-  s.cues.map((c) => ({ line: c.line, scene: s.id, from: s.from + Math.round(c.at * FPS), timing: lineTiming(c.line) })),
+  s.cues.map((c) => ({
+    line: c.line,
+    scene: s.id,
+    from: s.from + Math.round(c.at * FPS),
+    timing: lineTiming(c.line),
+  })),
 );
 
 // Seconds from scene start at which word `i` of a cue's line is spoken.
@@ -110,13 +160,17 @@ export const wordAt = (sceneId: SceneId, line: LineId, i: number) => {
 // ---- Guards: the build fails rather than ship a broken cut ----
 
 if (TOTAL_FRAMES > HARD_CAP_SECONDS * FPS) {
-  throw new Error(`Timeline is ${(TOTAL_FRAMES / FPS).toFixed(2)} s, over the ${HARD_CAP_SECONDS} s hard cap.`);
+  throw new Error(
+    `Timeline is ${(TOTAL_FRAMES / FPS).toFixed(2)} s, over the ${HARD_CAP_SECONDS} s hard cap.`,
+  );
 }
 for (const s of TIMELINE) {
   for (const c of s.cues) {
     const end = c.at + lineTiming(c.line).duration;
     if (end > s.seconds + 0.05) {
-      throw new Error(`${c.line} ends at ${end.toFixed(2)} s, past the end of ${s.id} (${s.seconds} s).`);
+      throw new Error(
+        `${c.line} ends at ${end.toFixed(2)} s, past the end of ${s.id} (${s.seconds} s).`,
+      );
     }
   }
 }

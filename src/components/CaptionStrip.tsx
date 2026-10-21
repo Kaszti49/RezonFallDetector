@@ -6,7 +6,11 @@ import { TornPaper } from "./material/TornPaper";
 export type CaptionTone = "product" | "problem";
 
 // Punctuation never decides a highlight: "egyedül" matches "egyedül." too.
-const bare = (w: string) => w.replace(/^[„"]+/, "").replace(/[.,!?:;"”–]+$/, "").toLowerCase();
+const bare = (w: string) =>
+  w
+    .replace(/^[„"]+/, "")
+    .replace(/[.,!?:;"”–]+$/, "")
+    .toLowerCase();
 
 // Torn white paper strip on a kraft backing scrap, centered at the bottom.
 // `revealed` hides words past that count without changing the strip size (word-by-word reveal).
@@ -20,20 +24,37 @@ export const CaptionStrip: React.FC<{
   const accent = tone === "product" ? PALETTE.teal : PALETTE.red;
   const keys = new Set(highlight.map((h) => h.toLowerCase()));
   const words = lines.map((line) => line.split(" "));
-  const offsets = words.map((_, li) => words.slice(0, li).reduce((n, ws) => n + ws.length, 0));
+  const offsets = words.map((_, li) =>
+    words.slice(0, li).reduce((n, ws) => n + ws.length, 0),
+  );
 
   return (
-    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: SAFE.y }}>
+    <AbsoluteFill
+      style={{
+        justifyContent: "flex-end",
+        alignItems: "center",
+        paddingBottom: SAFE.y,
+      }}
+    >
       <div style={{ display: "grid" }}>
         <TornPaper
           seed={`${seed}-back`}
           color={PALETTE.kraft}
           tear={6}
           grain={0.55}
-          style={{ gridArea: "1 / 1", margin: "-7px -16px -9px -12px", rotate: "-0.8deg" }}
+          style={{
+            gridArea: "1 / 1",
+            margin: "-7px -16px -9px -12px",
+            rotate: "-0.8deg",
+          }}
           innerStyle={{ height: "100%" }}
         />
-        <TornPaper seed={seed} tear={5} style={{ gridArea: "1 / 1", rotate: "0.3deg" }} innerStyle={{ padding: "18px 46px 20px" }}>
+        <TornPaper
+          seed={seed}
+          tear={5}
+          style={{ gridArea: "1 / 1", rotate: "0.3deg" }}
+          innerStyle={{ padding: "18px 46px 20px" }}
+        >
           {words.map((ws, li) => (
             <div
               key={li}
@@ -52,7 +73,10 @@ export const CaptionStrip: React.FC<{
                   key={wi}
                   style={{
                     color: keys.has(bare(w)) ? accent : undefined,
-                    visibility: revealed === undefined || offsets[li] + wi < revealed ? "visible" : "hidden",
+                    visibility:
+                      revealed === undefined || offsets[li] + wi < revealed
+                        ? "visible"
+                        : "hidden",
                   }}
                 >
                   {wi < ws.length - 1 ? `${w} ` : w}

@@ -5,7 +5,11 @@ import { hashSeed, mulberry32 } from "./random";
 
 export const tornClip = (
   seed: string,
-  { tear = 5, side = 1.5, steps = 56 }: { tear?: number; side?: number; steps?: number } = {},
+  {
+    tear = 5,
+    side = 1.5,
+    steps = 56,
+  }: { tear?: number; side?: number; steps?: number } = {},
 ) => {
   const r = mulberry32(hashSeed(seed));
   const edge = () => {
@@ -14,10 +18,16 @@ export const tornClip = (
     return (r() * tear * deep).toFixed(2);
   };
   const pts: string[] = [];
-  for (let i = 0; i <= steps; i++) pts.push(`${((i / steps) * 100).toFixed(2)}% ${edge()}px`);
-  for (let i = 1; i < 6; i++) pts.push(`calc(100% - ${(r() * side).toFixed(2)}px) ${((i / 6) * 100).toFixed(2)}%`);
-  for (let i = steps; i >= 0; i--) pts.push(`${((i / steps) * 100).toFixed(2)}% calc(100% - ${edge()}px)`);
-  for (let i = 5; i > 0; i--) pts.push(`${(r() * side).toFixed(2)}px ${((i / 6) * 100).toFixed(2)}%`);
+  for (let i = 0; i <= steps; i++)
+    pts.push(`${((i / steps) * 100).toFixed(2)}% ${edge()}px`);
+  for (let i = 1; i < 6; i++)
+    pts.push(
+      `calc(100% - ${(r() * side).toFixed(2)}px) ${((i / 6) * 100).toFixed(2)}%`,
+    );
+  for (let i = steps; i >= 0; i--)
+    pts.push(`${((i / steps) * 100).toFixed(2)}% calc(100% - ${edge()}px)`);
+  for (let i = 5; i > 0; i--)
+    pts.push(`${(r() * side).toFixed(2)}px ${((i / 6) * 100).toFixed(2)}%`);
   return `polygon(${pts.join(", ")})`;
 };
 

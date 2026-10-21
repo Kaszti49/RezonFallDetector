@@ -17,12 +17,26 @@ const TILES: readonly (readonly [string, string])[] = [
   [DERIVED.steel, PALETTE.ink],
 ];
 
-type Scrap = { face: Face; bg: string; fg: string; rot: number; dy: number; scale: number; clip: string };
+type Scrap = {
+  face: Face;
+  bg: string;
+  fg: string;
+  rot: number;
+  dy: number;
+  scale: number;
+  clip: string;
+};
 
-const pickScrap = (seed: string, style: TitleStyle, size: number, tilt: number): Scrap => {
+const pickScrap = (
+  seed: string,
+  style: TitleStyle,
+  size: number,
+  tilt: number,
+): Scrap => {
   const r = mulberry32(hashSeed(seed));
   const [bg, fg] = TILES[Math.floor(r() * TILES.length)];
-  const face = style === "ransom" ? RANSOM[Math.floor(r() * RANSOM.length)] : FACES[style];
+  const face =
+    style === "ransom" ? RANSOM[Math.floor(r() * RANSOM.length)] : FACES[style];
   return {
     face,
     bg,
@@ -34,15 +48,29 @@ const pickScrap = (seed: string, style: TitleStyle, size: number, tilt: number):
   };
 };
 
-const ScrapTile: React.FC<{ s: Scrap; size: number; pad: [number, number]; children: React.ReactNode }> = ({
-  s,
-  size,
-  pad,
-  children,
-}) => (
-  <div style={{ display: "grid", rotate: `${s.rot}deg`, translate: `0 ${s.dy}px`, filter: LAYER_SHADOW }}>
+const ScrapTile: React.FC<{
+  s: Scrap;
+  size: number;
+  pad: [number, number];
+  children: React.ReactNode;
+}> = ({ s, size, pad, children }) => (
+  <div
+    style={{
+      display: "grid",
+      rotate: `${s.rot}deg`,
+      translate: `0 ${s.dy}px`,
+      filter: LAYER_SHADOW,
+    }}
+  >
     {/* Card thickness: the same scrap in shade, pushed toward bottom-right. */}
-    <div style={{ gridArea: "1 / 1", background: shade(s.bg, 0.6), clipPath: s.clip, translate: "2px 3px" }} />
+    <div
+      style={{
+        gridArea: "1 / 1",
+        background: shade(s.bg, 0.6),
+        clipPath: s.clip,
+        translate: "2px 3px",
+      }}
+    />
     <div
       style={{
         gridArea: "1 / 1",
@@ -73,12 +101,12 @@ const ScrapTile: React.FC<{ s: Scrap; size: number; pad: [number, number]; child
 );
 
 // Ransom-note title: every letter on its own cut scrap (for short stamps like "2031", "REZON").
-export const CollageLetters: React.FC<{ text: string; size: number; style: TitleStyle; seed: string }> = ({
-  text,
-  size,
-  style,
-  seed,
-}) => {
+export const CollageLetters: React.FC<{
+  text: string;
+  size: number;
+  style: TitleStyle;
+  seed: string;
+}> = ({ text, size, style, seed }) => {
   const scraps = useMemo(
     () => [...text].map((_, i) => pickScrap(`${seed}-${i}`, style, size, 5)),
     [text, style, size, seed],
@@ -89,7 +117,12 @@ export const CollageLetters: React.FC<{ text: string; size: number; style: Title
         ch === " " ? (
           <div key={i} style={{ width: size * 0.3 }} />
         ) : (
-          <ScrapTile key={i} s={scraps[i]} size={size} pad={[size * 0.06, size * 0.12]}>
+          <ScrapTile
+            key={i}
+            s={scraps[i]}
+            size={size}
+            pad={[size * 0.06, size * 0.12]}
+          >
             {ch}
           </ScrapTile>
         ),
@@ -99,20 +132,28 @@ export const CollageLetters: React.FC<{ text: string; size: number; style: Title
 };
 
 // Longer lines (tagline): one scrap per word keeps it readable.
-export const CollageWords: React.FC<{ text: string; size: number; style: TitleStyle; seed: string; scales?: readonly number[] }> = ({
-  text,
-  size,
-  style,
-  seed,
-  scales,
-}) => {
+export const CollageWords: React.FC<{
+  text: string;
+  size: number;
+  style: TitleStyle;
+  seed: string;
+  scales?: readonly number[];
+}> = ({ text, size, style, seed, scales }) => {
   const words = useMemo(() => text.split(" "), [text]);
   const scraps = useMemo(
     () => words.map((_, i) => pickScrap(`${seed}-w${i}`, style, size, 2.5)),
     [words, style, size, seed],
   );
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: size * 0.18 }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: size * 0.18,
+      }}
+    >
       {words.map((w, i) => (
         <div key={i} style={{ scale: `${scales?.[i] ?? 1}` }}>
           <ScrapTile s={scraps[i]} size={size} pad={[size * 0.12, size * 0.28]}>

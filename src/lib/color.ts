@@ -27,7 +27,8 @@ export const mix = (...stops: [string, number][]) => {
 };
 
 // The same paper under less (k < 1) or more (k > 1) light.
-export const shade = (hex: string, k: number) => toHex(parse(hex).map((c) => c * k));
+export const shade = (hex: string, k: number) =>
+  toHex(parse(hex).map((c) => c * k));
 
 export const withAlpha = (hex: string, a: number) => {
   const [r, g, b] = parse(hex);

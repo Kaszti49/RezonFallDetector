@@ -17,8 +17,22 @@ export const Piece: React.FC<{
   opacity?: number;
   transform?: string;
   children?: React.ReactNode;
-}> = ({ d, fill, material = "paper", depth = 0, shadow = "sh", fillRule, opacity, transform, children }) => (
-  <g transform={transform} filter={shadow ? `url(#${shadow})` : undefined} opacity={opacity}>
+}> = ({
+  d,
+  fill,
+  material = "paper",
+  depth = 0,
+  shadow = "sh",
+  fillRule,
+  opacity,
+  transform,
+  children,
+}) => (
+  <g
+    transform={transform}
+    filter={shadow ? `url(#${shadow})` : undefined}
+    opacity={opacity}
+  >
     {depth > 0 ? (
       <path
         d={d}
@@ -27,11 +41,27 @@ export const Piece: React.FC<{
         transform={`translate(${(depth * 0.6).toFixed(2)} ${(depth * 0.8).toFixed(2)})`}
       />
     ) : null}
-    {shadow ? <path d={d} fillRule={fillRule} fill={shade(fill, 1.18)} transform="translate(-1.1 -1.1)" /> : null}
+    {shadow ? (
+      <path
+        d={d}
+        fillRule={fillRule}
+        fill={shade(fill, 1.18)}
+        transform="translate(-1.1 -1.1)"
+      />
+    ) : null}
     <path d={d} fillRule={fillRule} fill={fill} />
-    <path d={d} fillRule={fillRule} fill="url(#tex-grain)" opacity={GRAIN[material]} />
-    {material !== "paper" ? <path d={d} fillRule={fillRule} fill="url(#tex-fiber)" opacity={0.3} /> : null}
-    {material === "card" ? <path d={d} fillRule={fillRule} fill="url(#tex-flutes)" opacity={0.05} /> : null}
+    <path
+      d={d}
+      fillRule={fillRule}
+      fill="url(#tex-grain)"
+      opacity={GRAIN[material]}
+    />
+    {material !== "paper" ? (
+      <path d={d} fillRule={fillRule} fill="url(#tex-fiber)" opacity={0.3} />
+    ) : null}
+    {material === "card" ? (
+      <path d={d} fillRule={fillRule} fill="url(#tex-flutes)" opacity={0.05} />
+    ) : null}
     {children}
   </g>
 );

@@ -23,12 +23,22 @@ export const CaptionTrack: React.FC = () => {
     for (let p = 0; p < c.pages.length; p++) {
       const count = c.pages[p].reduce((n, l) => n + l.split(" ").length, 0);
       const last = first + count - 1;
-      const nextStart = p + 1 < c.pages.length ? words[last + 1] : duration + LINGER;
+      const nextStart =
+        p + 1 < c.pages.length ? words[last + 1] : duration + LINGER;
       if (t >= words[first] && t < nextStart) {
-        const revealed = words.filter((w, i) => i >= first && i <= last && w <= t).length;
+        const revealed = words.filter(
+          (w, i) => i >= first && i <= last && w <= t,
+        ).length;
         const pop = snap(Math.min(1, ((t - words[first]) * FPS) / 4));
         return (
-          <div style={{ position: "absolute", inset: 0, scale: `${0.94 + 0.06 * pop}`, transformOrigin: "50% 95%" }}>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              scale: `${0.94 + 0.06 * pop}`,
+              transformOrigin: "50% 95%",
+            }}
+          >
             <CaptionStrip
               seed={`${cue.line}-p${p}`}
               lines={c.pages[p]}

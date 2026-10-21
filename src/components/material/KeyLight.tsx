@@ -3,7 +3,10 @@ import { withAlpha } from "../../lib/color";
 import { PALETTE } from "../../theme";
 
 // One soft key light from the top-left: warm lift near the source, falloff toward bottom-right.
-export const KeyLight: React.FC<{ strength?: number; warmth?: number }> = ({ strength = 1, warmth = 1 }) => (
+export const KeyLight: React.FC<{ strength?: number; warmth?: number }> = ({
+  strength = 1,
+  warmth = 1,
+}) => (
   <>
     <AbsoluteFill
       style={{

@@ -1,6 +1,10 @@
 import { AbsoluteFill } from "remotion";
 import { CaptionStrip } from "../components/CaptionStrip";
-import { CollageLetters, CollageWords, type TitleStyle } from "../components/Collage";
+import {
+  CollageLetters,
+  CollageWords,
+  type TitleStyle,
+} from "../components/Collage";
 import { KeyLight } from "../components/material/KeyLight";
 import { MaterialDefs } from "../components/material/MaterialDefs";
 import { Piece } from "../components/material/Piece";
@@ -12,16 +16,21 @@ import { cut, roundRect } from "../lib/shapes";
 import { LED, RezonHero, RezonSide } from "../props/Rezon";
 import { Mari, MARI, MARI_POSES } from "../puppets/Mari";
 import { BATH, BathroomSet, WallCamera, WindowLight } from "../sets/Bathroom";
-import { FloorRipple, HOUSE, HouseBack, HouseFront } from "../sets/HouseSection";
+import {
+  FloorRipple,
+  HOUSE,
+  HouseBack,
+  HouseFront,
+} from "../sets/HouseSection";
 import { PerspectiveFloor } from "../sets/PerspectiveFloor";
 import { DERIVED, PALETTE, SAFE, VIDEO } from "../theme";
 
 // One frame of the film: shared defs, the SVG set, the key light, then HTML overlays (captions).
-const Stage: React.FC<{ children: React.ReactNode; overlay?: React.ReactNode; light?: number }> = ({
-  children,
-  overlay,
-  light = 1,
-}) => (
+const Stage: React.FC<{
+  children: React.ReactNode;
+  overlay?: React.ReactNode;
+  light?: number;
+}> = ({ children, overlay, light = 1 }) => (
   <AbsoluteFill style={{ backgroundColor: PALETTE.kraft }}>
     <MaterialDefs />
     <svg
@@ -50,19 +59,39 @@ export const StyleBathroom: React.FC = () => (
     }
   >
     <BathroomSet camera={<WallCamera ledOn />} />
-    <Mari pose={MARI.stand} place={{ mode: "stand", x: 470, floor: BATH.floorY }} />
+    <Mari
+      pose={MARI.stand}
+      place={{ mode: "stand", x: 470, floor: BATH.floorY }}
+    />
     <WindowLight />
   </Stage>
 );
 
 // S08: macro shot of the device on the bathroom floor. Shallow focus: wall and far floor go soft.
 const wallTiles = Array.from({ length: 3 }, (_, row) =>
-  Array.from({ length: 11 }, (_, col) => cut(roundRect(-60 + col * 190, -150 + row * 190, 180, 180, 5, 8), `ct-${row}-${col}`, { wobble: 1.2 })),
+  Array.from({ length: 11 }, (_, col) =>
+    cut(
+      roundRect(-60 + col * 190, -150 + row * 190, 180, 180, 5, 8),
+      `ct-${row}-${col}`,
+      { wobble: 1.2 },
+    ),
+  ),
 ).flat();
-const skirting = cut(roundRect(-20, 418, 1960, 36, 2, 8), "ct-skirt", { wobble: 1.2 });
+const skirting = cut(roundRect(-20, 418, 1960, 36, 2, 8), "ct-skirt", {
+  wobble: 1.2,
+});
 
 export const StyleDevice: React.FC = () => (
-  <Stage overlay={<CaptionStrip seed="cap-s08" tone="product" lines={["Ez a Rezon."]} highlight={["rezon"]} />}>
+  <Stage
+    overlay={
+      <CaptionStrip
+        seed="cap-s08"
+        tone="product"
+        lines={["Ez a Rezon."]}
+        highlight={["rezon"]}
+      />
+    }
+  >
     <g filter="url(#dof-4)">
       <rect width={1920} height={440} fill={PALETTE.kraft} />
       <g filter="url(#sh-flat)">
@@ -91,18 +120,35 @@ export const StyleDevice: React.FC = () => (
 // S09: Mari walks; each step sends a teal wave through the screed to the device and onto the tape.
 const SECTION_T = 3.45;
 const X_DEVICE = 1360;
-const SECTION_STEPS = walkImpacts(-2.8, 130, 0.6, 50, 11).filter((s) => s.x >= 200 && s.t <= SECTION_T);
+const SECTION_STEPS = walkImpacts(-2.8, 130, 0.6, 50, 11).filter(
+  (s) => s.x >= 200 && s.t <= SECTION_T,
+);
 
 export const StyleSection: React.FC = () => (
   <Stage
     light={0.85}
     overlay={
-      <CaptionStrip seed="cap-s09" tone="product" lines={["Minden lépésnek saját rezgése van –"]} highlight={["rezgése"]} />
+      <CaptionStrip
+        seed="cap-s09"
+        tone="product"
+        lines={["Minden lépésnek saját rezgése van –"]}
+        highlight={["rezgése"]}
+      />
     }
   >
     <HouseBack />
-    <Mari pose={MARI_POSES.walkPass} place={{ mode: "stand", x: 640, floor: HOUSE.floorY }} scale={0.62} />
-    <RezonSide x={X_DEVICE} y={HOUSE.floorY} led={LED.ok(Math.min(1, floorEnvelope(X_DEVICE, SECTION_T, SECTION_STEPS) / 2))} />
+    <Mari
+      pose={MARI_POSES.walkPass}
+      place={{ mode: "stand", x: 640, floor: HOUSE.floorY }}
+      scale={0.62}
+    />
+    <RezonSide
+      x={X_DEVICE}
+      y={HOUSE.floorY}
+      led={LED.ok(
+        Math.min(1, floorEnvelope(X_DEVICE, SECTION_T, SECTION_STEPS) / 2),
+      )}
+    />
     <HouseFront />
     <FloorRipple t={SECTION_T} impacts={SECTION_STEPS} />
     <Seismograph
@@ -128,7 +174,11 @@ const TITLE_ROWS: { style: TitleStyle; label: string }[] = [
 export const StyleTitles: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: PALETTE.kraft }}>
     <MaterialDefs />
-    <svg width={VIDEO.width} height={VIDEO.height} style={{ position: "absolute", inset: 0 }}>
+    <svg
+      width={VIDEO.width}
+      height={VIDEO.height}
+      style={{ position: "absolute", inset: 0 }}
+    >
       <rect width={1920} height={1080} fill="url(#tex-grain)" opacity={0.5} />
       <rect width={1920} height={1080} fill="url(#tex-fiber)" opacity={0.25} />
       <rect width={1920} height={1080} filter="url(#f-mottle)" />
@@ -143,16 +193,56 @@ export const StyleTitles: React.FC = () => (
       }}
     >
       {TITLE_ROWS.map(({ style, label }) => (
-        <div key={style} style={{ display: "flex", alignItems: "center", gap: 56 }}>
-          <TornPaper seed={`label-${style}`} edge="scrap" tear={4} style={{ rotate: "-2deg", width: 300 }} innerStyle={{ padding: "12px 22px" }}>
-            <div style={{ fontFamily: RUBIK, fontWeight: WEIGHT.tag, fontSize: 28, color: PALETTE.ink }}>{label}</div>
-          </TornPaper>
-          <div style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "flex-start" }}>
-            <div style={{ display: "flex", gap: 64, alignItems: "center" }}>
-              <CollageLetters text="2031" size={100} style={style} seed={`t2031-${style}`} />
-              <CollageLetters text="REZON" size={100} style={style} seed={`trezon-${style}`} />
+        <div
+          key={style}
+          style={{ display: "flex", alignItems: "center", gap: 56 }}
+        >
+          <TornPaper
+            seed={`label-${style}`}
+            edge="scrap"
+            tear={4}
+            style={{ rotate: "-2deg", width: 300 }}
+            innerStyle={{ padding: "12px 22px" }}
+          >
+            <div
+              style={{
+                fontFamily: RUBIK,
+                fontWeight: WEIGHT.tag,
+                fontSize: 28,
+                color: PALETTE.ink,
+              }}
+            >
+              {label}
             </div>
-            <CollageWords text="A ház, ami meghallja, ha baj van." size={46} style={style} seed={`ttag-${style}`} />
+          </TornPaper>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 24,
+              alignItems: "flex-start",
+            }}
+          >
+            <div style={{ display: "flex", gap: 64, alignItems: "center" }}>
+              <CollageLetters
+                text="2031"
+                size={100}
+                style={style}
+                seed={`t2031-${style}`}
+              />
+              <CollageLetters
+                text="REZON"
+                size={100}
+                style={style}
+                seed={`trezon-${style}`}
+              />
+            </div>
+            <CollageWords
+              text="A ház, ami meghallja, ha baj van."
+              size={46}
+              style={style}
+              seed={`ttag-${style}`}
+            />
           </div>
         </div>
       ))}

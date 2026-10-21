@@ -1,5 +1,12 @@
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { blendCamera, Camera, clampCamera, toScreen, WIDE, type CameraState } from "../components/Camera";
+import {
+  blendCamera,
+  Camera,
+  clampCamera,
+  toScreen,
+  WIDE,
+  type CameraState,
+} from "../components/Camera";
 import { CollageLetters, CollageWords } from "../components/Collage";
 import { KeyLight } from "../components/material/KeyLight";
 import { Piece } from "../components/material/Piece";
@@ -9,13 +16,37 @@ import { keys, onTwos, ramp, shake, snap } from "../lib/anim";
 import { shade } from "../lib/color";
 import { tornRectPath } from "../lib/paths";
 import { internalsAnchors, levels, RezonInternals } from "../props/Exploded";
-import { Chair, CountdownRing, Desk, Keys, ON, PaperTag, Phone, SoundBubble, WifiIcon } from "../props/Props";
+import {
+  Chair,
+  CountdownRing,
+  Desk,
+  Keys,
+  ON,
+  PaperTag,
+  Phone,
+  SoundBubble,
+  WifiIcon,
+} from "../props/Props";
 import { LED, RezonHero, RezonSide, type LedState } from "../props/Rezon";
 import { Anna, ANNA } from "../puppets/Anna";
-import { Mari, MARI, walkImpacts, walkPose, walkX, type WalkPlan } from "../puppets/Mari";
+import {
+  Mari,
+  MARI,
+  walkImpacts,
+  walkPose,
+  walkX,
+  type WalkPlan,
+} from "../puppets/Mari";
 import { lerpPose, type Placement, type Pose } from "../puppets/rig";
 import { BathroomSet, WallCamera } from "../sets/Bathroom";
-import { BATH_FILL, BathroomInHouse, FloorRipple, HOUSE, HouseBack, HouseFront } from "../sets/HouseSection";
+import {
+  BATH_FILL,
+  BathroomInHouse,
+  FloorRipple,
+  HOUSE,
+  HouseBack,
+  HouseFront,
+} from "../sets/HouseSection";
 import { PerspectiveFloor } from "../sets/PerspectiveFloor";
 import { FALL_DELAY, fallState } from "../story/bathroomStory";
 import { DERIVED, PALETTE, SAFE, VIDEO } from "../theme";
@@ -33,7 +64,14 @@ const CAM_BATH: CameraState = clampCamera({ cx: 1340, cy: 470, zoom: 2.3 });
 // Section clock σ: 0 at the start of S09, running through S10 and S11.
 const S09_LEN = scene("S09").seconds;
 const S10_LEN = scene("S10").seconds;
-const SEC_WALK: WalkPlan = { t0: 0.4, t1: 10.4, x0: 330, period: 0.5, stride: 106, scale: MARI_SCALE };
+const SEC_WALK: WalkPlan = {
+  t0: 0.4,
+  t1: 10.4,
+  x0: 330,
+  period: 0.5,
+  stride: 106,
+  scale: MARI_SCALE,
+};
 const SEC_X = walkX(SEC_WALK, SEC_WALK.t1);
 const SEC_SLIP = S09_LEN + 0.3;
 const SEC_HIT = SEC_SLIP + FALL_DELAY;
@@ -46,7 +84,11 @@ type Puppet = { pose: Pose; place: Placement; tilt: number };
 
 const mariInSection = (sigma: number): Puppet => {
   if (sigma < SEC_SLIP) {
-    return { pose: walkPose(SEC_WALK, sigma), place: { mode: "stand", x: walkX(SEC_WALK, sigma), floor: FLOOR }, tilt: 0 };
+    return {
+      pose: walkPose(SEC_WALK, sigma),
+      place: { mode: "stand", x: walkX(SEC_WALK, sigma), floor: FLOOR },
+      tilt: 0,
+    };
   }
   const f = fallState(sigma, SEC_SLIP, SEC_X, FLOOR, MARI_SCALE);
   const s11 = sigma - S09_LEN - S10_LEN;
@@ -72,7 +114,17 @@ const SectionWorld: React.FC<{
   ripple?: { t: number; impacts: readonly Impact[] };
   extra?: React.ReactNode;
   clockHours?: number;
-}> = ({ frame, assemble = 1, bathroomCamera, mari, anna, device, ripple, extra, clockHours }) => (
+}> = ({
+  frame,
+  assemble = 1,
+  bathroomCamera,
+  mari,
+  anna,
+  device,
+  ripple,
+  extra,
+  clockHours,
+}) => (
   <>
     <HouseBack
       assemble={assemble}
@@ -82,23 +134,48 @@ const SectionWorld: React.FC<{
         </BathroomInHouse>
       }
     />
-    {mari ? <Mari pose={mari.pose} place={mari.place} tilt={mari.tilt} scale={MARI_SCALE} frame={frame} /> : null}
+    {mari ? (
+      <Mari
+        pose={mari.pose}
+        place={mari.place}
+        tilt={mari.tilt}
+        scale={MARI_SCALE}
+        frame={frame}
+      />
+    ) : null}
     {anna}
     {device ? <RezonSide x={X_DEV} y={device.y} led={device.led} /> : null}
     {extra}
     <HouseFront assemble={assemble} />
     {ripple ? (
       <>
-        <FloorRipple t={ripple.t} impacts={ripple.impacts.filter((i) => i.kind === "step")} />
-        <FloorRipple t={ripple.t} impacts={ripple.impacts.filter((i) => i.kind === "fall")} color={PALETTE.red} guide={false} />
+        <FloorRipple
+          t={ripple.t}
+          impacts={ripple.impacts.filter((i) => i.kind === "step")}
+        />
+        <FloorRipple
+          t={ripple.t}
+          impacts={ripple.impacts.filter((i) => i.kind === "fall")}
+          color={PALETTE.red}
+          guide={false}
+        />
       </>
     ) : null}
   </>
 );
 
-const Frame: React.FC<{ children: React.ReactNode; overlay?: React.ReactNode; light?: number }> = ({ children, overlay, light = 0.9 }) => (
+const Frame: React.FC<{
+  children: React.ReactNode;
+  overlay?: React.ReactNode;
+  light?: number;
+}> = ({ children, overlay, light = 0.9 }) => (
   <AbsoluteFill style={{ backgroundColor: PALETTE.kraft }}>
-    <svg width={VIDEO.width} height={VIDEO.height} viewBox={`0 0 ${VIDEO.width} ${VIDEO.height}`} style={{ position: "absolute", inset: 0 }}>
+    <svg
+      width={VIDEO.width}
+      height={VIDEO.height}
+      viewBox={`0 0 ${VIDEO.width} ${VIDEO.height}`}
+      style={{ position: "absolute", inset: 0 }}
+    >
       {children}
     </svg>
     <KeyLight strength={light} />
@@ -107,13 +184,19 @@ const Frame: React.FC<{ children: React.ReactNode; overlay?: React.ReactNode; li
 );
 
 const ScreenSvg: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <svg width={VIDEO.width} height={VIDEO.height} style={{ position: "absolute", inset: 0 }}>
+  <svg
+    width={VIDEO.width}
+    height={VIDEO.height}
+    style={{ position: "absolute", inset: 0 }}
+  >
     {children}
   </svg>
 );
 
-const sectionClock = (frame: number, offset: number) => offset + onTwos(frame) / FPS;
-const deviceGlow = (t: number, impacts: readonly Impact[]) => Math.min(1, 0.25 + floorEnvelope(X_DEV, t, impacts) / 2);
+const sectionClock = (frame: number, offset: number) =>
+  offset + onTwos(frame) / FPS;
+const deviceGlow = (t: number, impacts: readonly Impact[]) =>
+  Math.min(1, 0.25 + floorEnvelope(X_DEV, t, impacts) / 2);
 const clockAt = (sigma: number) => 8 + (10 + sigma * 0.12) / 60;
 
 // ---- S07: 2031. The camera peels off; the bathroom becomes a cross-section of the whole house. ----
@@ -143,13 +226,22 @@ export const S07: React.FC = () => {
               scale: `${slam * (1 - park * 0.6)}`,
             }}
           >
-            <CollageLetters text={ON.year} size={170} style="ransom" seed="stamp-2031" />
+            <CollageLetters
+              text={ON.year}
+              size={170}
+              style="ransom"
+              seed="stamp-2031"
+            />
           </AbsoluteFill>
         ) : null
       }
     >
       <Camera state={cam}>
-        <SectionWorld frame={frame} assemble={build} bathroomCamera={<WallCamera ledOn={t % 1 < 0.5} peel={peel} />} />
+        <SectionWorld
+          frame={frame}
+          assemble={build}
+          bathroomCamera={<WallCamera ledOn={t % 1 < 0.5} peel={peel} />}
+        />
       </Camera>
     </Frame>
   );
@@ -161,9 +253,17 @@ const CUT_TO_HERO = 2.75;
 
 const heroBackdrop = {
   wall: Array.from({ length: 3 }, (_, row) =>
-    Array.from({ length: 11 }, (_, col) => cut(roundRect(-60 + col * 190, -150 + row * 190, 180, 180, 5, 8), `ht-${row}-${col}`, { wobble: 1.2 })),
+    Array.from({ length: 11 }, (_, col) =>
+      cut(
+        roundRect(-60 + col * 190, -150 + row * 190, 180, 180, 5, 8),
+        `ht-${row}-${col}`,
+        { wobble: 1.2 },
+      ),
+    ),
   ).flat(),
-  skirting: cut(roundRect(-20, 418, 1960, 36, 2, 8), "ht-skirt", { wobble: 1.2 }),
+  skirting: cut(roundRect(-20, 418, 1960, 36, 2, 8), "ht-skirt", {
+    wobble: 1.2,
+  }),
 };
 
 const HeroBackdrop: React.FC = () => (
@@ -177,7 +277,12 @@ const HeroBackdrop: React.FC = () => (
       </g>
     </g>
     <g filter="url(#dof-2)">
-      <Piece d={heroBackdrop.skirting} fill={PALETTE.cardboard} material="card" depth={5} />
+      <Piece
+        d={heroBackdrop.skirting}
+        fill={PALETTE.cardboard}
+        material="card"
+        depth={5}
+      />
     </g>
     <PerspectiveFloor
       rows={[452, 482, 520, 568, 630, 708, 810, 944, 1120]}
@@ -206,11 +311,20 @@ export const S08: React.FC = () => {
       [0.92, FLOOR],
     ]);
     const landing: Impact[] = [{ t: 0.75, x: X_DEV, kind: "step" }];
-    const cam = blendCamera(WIDE, clampCamera({ cx: X_DEV, cy: 560, zoom: 3.4 }), ramp(t, 1.4, CUT_TO_HERO));
+    const cam = blendCamera(
+      WIDE,
+      clampCamera({ cx: X_DEV, cy: 560, zoom: 3.4 }),
+      ramp(t, 1.4, CUT_TO_HERO),
+    );
     return (
       <Frame>
         <Camera state={cam}>
-          <SectionWorld frame={frame} device={{ y, led: LED.ok(deviceGlow(tw, landing)) }} ripple={{ t: tw, impacts: landing }} clockHours={clockAt(-10)} />
+          <SectionWorld
+            frame={frame}
+            device={{ y, led: LED.ok(deviceGlow(tw, landing)) }}
+            ripple={{ t: tw, impacts: landing }}
+            clockHours={clockAt(-10)}
+          />
         </Camera>
       </Frame>
     );
@@ -226,8 +340,13 @@ export const S08: React.FC = () => {
   ]);
   const L = levels(HERO.cy, Math.max(0, e));
   const A = internalsAnchors(HERO.cx, HERO.cy, HERO.rx, HERO.k, Math.max(0, e));
-  const tagScale = (word: number) => snap(ramp(t, w(word), w(word) + 0.25)) * (1 - ramp(t, 9.2, 9.45));
-  const cam = blendCamera(WIDE, clampCamera({ cx: 960, cy: 560, zoom: 1.05 }), ramp(t, CUT_TO_HERO, 12));
+  const tagScale = (word: number) =>
+    snap(ramp(t, w(word), w(word) + 0.25)) * (1 - ramp(t, 9.2, 9.45));
+  const cam = blendCamera(
+    WIDE,
+    clampCamera({ cx: 960, cy: 560, zoom: 1.05 }),
+    ramp(t, CUT_TO_HERO, 12),
+  );
   const pulse = 0.55 + 0.45 * Math.sin(t * 5);
   return (
     <Frame light={0.8}>
@@ -242,16 +361,63 @@ export const S08: React.FC = () => {
           seed="hero8"
           led={LED.ok(t > 9.85 ? 1 : pulse)}
           lidLift={L.lidLift}
-          inside={e > 0 ? <RezonInternals cx={HERO.cx} cy={HERO.cy} rx={HERO.rx} k={HERO.k} e={Math.max(0, e)} /> : null}
+          inside={
+            e > 0 ? (
+              <RezonInternals
+                cx={HERO.cx}
+                cy={HERO.cy}
+                rx={HERO.rx}
+                k={HERO.k}
+                e={Math.max(0, e)}
+              />
+            ) : null
+          }
         />
-        <PaperTag x={540} y={L.speaker} text={ON.parts[0]} anchor={A.speaker} seed="tag-speaker" scale={tagScale(6)} />
-        <PaperTag x={1390} y={L.board + 10} text={ON.parts[1]} anchor={A.board} seed="tag-esp" rot={2} scale={tagScale(8)} />
-        <PaperTag x={1410} y={L.tray - 6} text={ON.parts[3]} anchor={A.battery} seed="tag-battery" rot={3} scale={tagScale(10)} />
-        <PaperTag x={520} y={L.tray - 40} text={ON.parts[2]} anchor={A.geophone} seed="tag-geofon" scale={tagScale(12)} />
+        <PaperTag
+          x={540}
+          y={L.speaker}
+          text={ON.parts[0]}
+          anchor={A.speaker}
+          seed="tag-speaker"
+          scale={tagScale(6)}
+        />
+        <PaperTag
+          x={1390}
+          y={L.board + 10}
+          text={ON.parts[1]}
+          anchor={A.board}
+          seed="tag-esp"
+          rot={2}
+          scale={tagScale(8)}
+        />
+        <PaperTag
+          x={1410}
+          y={L.tray - 6}
+          text={ON.parts[3]}
+          anchor={A.battery}
+          seed="tag-battery"
+          rot={3}
+          scale={tagScale(10)}
+        />
+        <PaperTag
+          x={520}
+          y={L.tray - 40}
+          text={ON.parts[2]}
+          anchor={A.geophone}
+          seed="tag-geofon"
+          scale={tagScale(12)}
+        />
         <g transform={`translate(1340 ${L.board - 150}) scale(${tagScale(4)})`}>
           <WifiIcon x={0} y={0} scale={1.4} />
         </g>
-        <PaperTag x={1560} y={L.board - 146} text={ON.wireless} seed="tag-wireless" rot={-3} scale={tagScale(4)} />
+        <PaperTag
+          x={1560}
+          y={L.board - 146}
+          text={ON.wireless}
+          seed="tag-wireless"
+          rot={-3}
+          scale={tagScale(4)}
+        />
       </Camera>
     </Frame>
   );
@@ -260,14 +426,27 @@ export const S08: React.FC = () => {
 // ---- S09: she walks; every step travels through the floor to Rezon and onto the tape. ----
 const Tape: React.FC<{ sigma: number }> = ({ sigma }) => (
   <ScreenSvg>
-    <Seismograph x={230} y={786} w={1460} h={100} t={sigma} impacts={EVENTS} xDevice={X_DEV} label={ON.stepPattern} />
+    <Seismograph
+      x={230}
+      y={786}
+      w={1460}
+      h={100}
+      t={sigma}
+      impacts={EVENTS}
+      xDevice={X_DEV}
+      label={ON.stepPattern}
+    />
   </ScreenSvg>
 );
 
 export const S09: React.FC = () => {
   const frame = useCurrentFrame();
   const sigma = sectionClock(frame, 0);
-  const cam = blendCamera(WIDE, clampCamera({ cx: 1000, cy: 520, zoom: 1.04 }), ramp(frame / FPS, 0, 11));
+  const cam = blendCamera(
+    WIDE,
+    clampCamera({ cx: 1000, cy: 520, zoom: 1.04 }),
+    ramp(frame / FPS, 0, 11),
+  );
   return (
     <Frame overlay={<Tape sigma={sigma} />}>
       <Camera state={cam}>
@@ -289,7 +468,11 @@ export const S10: React.FC = () => {
   const t = frame / FPS;
   const sigma = sectionClock(frame, S09_LEN);
   const sh = shake(S09_LEN + t, SEC_HIT, 4);
-  const cam = { ...clampCamera({ cx: 1000, cy: 520, zoom: 1.04 }), sx: sh.x, sy: sh.y };
+  const cam = {
+    ...clampCamera({ cx: 1000, cy: 520, zoom: 1.04 }),
+    sx: sh.x,
+    sy: sh.y,
+  };
   const rule = snap(ramp(t, 2.0, 2.3));
   return (
     <Frame
@@ -297,7 +480,18 @@ export const S10: React.FC = () => {
         <>
           <Tape sigma={sigma} />
           <ScreenSvg>
-            {rule > 0 ? <PaperTag x={960} y={752} text={ON.fallRule} size={36} ink={PALETTE.red} seed="fall-rule" rot={-1.5} scale={rule} /> : null}
+            {rule > 0 ? (
+              <PaperTag
+                x={960}
+                y={752}
+                text={ON.fallRule}
+                size={36}
+                ink={PALETTE.red}
+                seed="fall-rule"
+                rot={-1.5}
+                scale={rule}
+              />
+            ) : null}
           </ScreenSvg>
         </>
       }
@@ -316,28 +510,53 @@ export const S10: React.FC = () => {
 };
 
 // ---- S11: amber LED, the device speaks, a 10-second countdown runs; she cannot get up. ----
-const Rings: React.FC<{ t: number; x: number; y: number; color: string; speed?: number; max?: number }> = ({ t, x, y, color, speed = 1.1, max = 120 }) => (
+const Rings: React.FC<{
+  t: number;
+  x: number;
+  y: number;
+  color: string;
+  speed?: number;
+  max?: number;
+}> = ({ t, x, y, color, speed = 1.1, max = 120 }) => (
   <g>
     {[0, 1, 2].map((i) => {
       const p = (((t * speed + i / 3) % 1) + 1) % 1;
       return (
-        <ellipse key={i} cx={x} cy={y} rx={16 + p * max} ry={(16 + p * max) * 0.42} fill="none" stroke={color} strokeWidth={4 - p * 2.5} opacity={(1 - p) * 0.9} />
+        <ellipse
+          key={i}
+          cx={x}
+          cy={y}
+          rx={16 + p * max}
+          ry={(16 + p * max) * 0.42}
+          fill="none"
+          stroke={color}
+          strokeWidth={4 - p * 2.5}
+          opacity={(1 - p) * 0.9}
+        />
       );
     })}
   </g>
 );
 
-const wordsShown = (t: number, line: "dev_01" | "dev_02", at: number) => lineTiming(line).words.filter((w) => w <= t - at).length;
+const wordsShown = (t: number, line: "dev_01" | "dev_02", at: number) =>
+  lineTiming(line).words.filter((w) => w <= t - at).length;
 
 export const S11: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
   const sigma = sectionClock(frame, S09_LEN + S10_LEN);
-  const cam = blendCamera(clampCamera({ cx: 1000, cy: 520, zoom: 1.04 }), CAM_BATH, ramp(t, 0, 0.9));
+  const cam = blendCamera(
+    clampCamera({ cx: 1000, cy: 520, zoom: 1.04 }),
+    CAM_BATH,
+    ramp(t, 0, 0.9),
+  );
   const dev = toScreen(cam, X_DEV, FLOOR - 40);
   const cue1 = scene("S11").cues[0].at;
   const cue2 = scene("S11").cues[1].at;
-  const speaking = t < cue2 ? { line: "dev_01" as const, at: cue1 } : { line: "dev_02" as const, at: cue2 };
+  const speaking =
+    t < cue2
+      ? { line: "dev_01" as const, at: cue1 }
+      : { line: "dev_02" as const, at: cue2 };
   const shown = wordsShown(t, speaking.line, speaking.at);
   const amber = LED.warn(0.6 + 0.4 * Math.abs(Math.sin(t * 3)));
   return (
@@ -364,8 +583,20 @@ export const S11: React.FC = () => {
           clockHours={clockAt(sigma)}
           extra={
             <>
-              {t > 0.3 ? <Rings t={t} x={X_DEV + 20} y={FLOOR - 44} color={PALETTE.warm} /> : null}
-              <CountdownRing cx={X_DEV} cy={FLOOR - 18} r={78} progress={ramp(t, 1.0, 6.8, 0, 1, (v) => v)} />
+              {t > 0.3 ? (
+                <Rings
+                  t={t}
+                  x={X_DEV + 20}
+                  y={FLOOR - 44}
+                  color={PALETTE.warm}
+                />
+              ) : null}
+              <CountdownRing
+                cx={X_DEV}
+                cy={FLOOR - 18}
+                r={78}
+                progress={ramp(t, 1.0, 6.8, 0, 1, (v) => v)}
+              />
             </>
           }
         />
@@ -398,7 +629,10 @@ export const S12: React.FC = () => {
   const buzz = t > tLit && t < tLit + 0.8 ? Math.sin(t * 90) * 4 : 0;
 
   // From the device in the mini house to the phone screen, as a travelling teal wave.
-  const from = { x: MINI.x + X_DEV * MINI.s, y: MINI.y + (FLOOR - 30) * MINI.s };
+  const from = {
+    x: MINI.x + X_DEV * MINI.s,
+    y: MINI.y + (FLOOR - 30) * MINI.s,
+  };
   const to = { x: 1700, y: 430 };
   const pts: string[] = [];
   const n = 90;
@@ -406,12 +640,18 @@ export const S12: React.FC = () => {
     const p = i / n;
     const x = from.x + (to.x - from.x) * p;
     const y = from.y + (to.y - from.y) * p - Math.sin(p * Math.PI) * 160;
-    pts.push(`${i === 0 ? "M" : "L"}${x.toFixed(1)} ${(y + Math.sin(p * 42) * 10).toFixed(1)}`);
+    pts.push(
+      `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${(y + Math.sin(p * 42) * 10).toFixed(1)}`,
+    );
   }
 
   const standUp = ramp(tw, 4.2, 4.9);
   const annaPose =
-    tw < tLit + 0.2 ? ANNA.sit : tw < 4.2 ? lerpPose(ANNA.sit, ANNA.sitAlert, ramp(tw, tLit + 0.2, tLit + 0.6)) : lerpPose(ANNA.sitAlert, ANNA.grabKeys, standUp);
+    tw < tLit + 0.2
+      ? ANNA.sit
+      : tw < 4.2
+        ? lerpPose(ANNA.sit, ANNA.sitAlert, ramp(tw, tLit + 0.2, tLit + 0.6))
+        : lerpPose(ANNA.sitAlert, ANNA.grabKeys, standUp);
   const hipY = keys(tw, [
     [4.2, RIGHT_FLOOR - 104],
     [4.9, RIGHT_FLOOR - 180],
@@ -422,23 +662,69 @@ export const S12: React.FC = () => {
     <Frame light={0.85}>
       {/* Left: the house, small. */}
       <g transform={`translate(${MINI.x} ${MINI.y}) scale(${MINI.s})`}>
-        <SectionWorld frame={frame} mari={mariInSection(S09_LEN + S10_LEN + 6)} device={{ y: FLOOR, led: LED.warn(1) }} clockHours={clockAt(30)} />
+        <SectionWorld
+          frame={frame}
+          mari={mariInSection(S09_LEN + S10_LEN + 6)}
+          device={{ y: FLOOR, led: LED.warn(1) }}
+          clockHours={clockAt(30)}
+        />
       </g>
       {/* Right: Anna at work. */}
-      <rect x={990} y={0} width={930} height={RIGHT_FLOOR} fill={shade(PALETTE.kraft, 1.07)} />
-      <rect x={990} y={0} width={930} height={RIGHT_FLOOR} fill="url(#tex-grain)" opacity={0.5} />
-      <rect x={990} y={RIGHT_FLOOR} width={930} height={120} fill={PALETTE.cardboard} />
-      <rect x={990} y={RIGHT_FLOOR} width={930} height={120} fill="url(#tex-fiber)" opacity={0.4} />
+      <rect
+        x={990}
+        y={0}
+        width={930}
+        height={RIGHT_FLOOR}
+        fill={shade(PALETTE.kraft, 1.07)}
+      />
+      <rect
+        x={990}
+        y={0}
+        width={930}
+        height={RIGHT_FLOOR}
+        fill="url(#tex-grain)"
+        opacity={0.5}
+      />
+      <rect
+        x={990}
+        y={RIGHT_FLOOR}
+        width={930}
+        height={120}
+        fill={PALETTE.cardboard}
+      />
+      <rect
+        x={990}
+        y={RIGHT_FLOOR}
+        width={930}
+        height={120}
+        fill="url(#tex-fiber)"
+        opacity={0.4}
+      />
       <Chair x={1210} y={RIGHT_FLOOR + 20} />
-      <Anna pose={annaPose} place={{ mode: "hip", x: 1210 + standUp * 40, y: hipY }} scale={0.95} keys={hasKeys} frame={frame} />
-      <g transform={`translate(1590 ${RIGHT_FLOOR - 222}) scale(0.84) translate(-1590 ${-(RIGHT_FLOOR - 222)})`}>
+      <Anna
+        pose={annaPose}
+        place={{ mode: "hip", x: 1210 + standUp * 40, y: hipY }}
+        scale={0.95}
+        keys={hasKeys}
+        frame={frame}
+      />
+      <g
+        transform={`translate(1590 ${RIGHT_FLOOR - 222}) scale(0.84) translate(-1590 ${-(RIGHT_FLOOR - 222)})`}
+      >
         <Desk x={1590} y={RIGHT_FLOOR - 222} />
       </g>
       {!hasKeys ? <Keys x={1450} y={RIGHT_FLOOR - 252} rot={-70} /> : null}
       <Phone x={1730 + buzz} y={518} lit={lit} rot={-4} />
       <Divider />
       {travel > 0 && t < tLit + 1.2 ? (
-        <path d={pts.join(" ")} stroke={PALETTE.teal} strokeWidth={6} fill="none" strokeLinecap="round" filter="url(#sh-s)" />
+        <path
+          d={pts.join(" ")}
+          stroke={PALETTE.teal}
+          strokeWidth={6}
+          fill="none"
+          strokeLinecap="round"
+          filter="url(#sh-s)"
+        />
       ) : null}
     </Frame>
   );
@@ -453,7 +739,10 @@ export const S13: React.FC = () => {
   const tw = onTwos(frame) / FPS;
   const s = MARI_SCALE;
   const up = ramp(tw, 1.0, 2.4);
-  const mariPose = tw < 2.4 ? lerpPose(MARI.lie, MARI.sitFloor, up) : lerpPose(MARI.sitFloor, MARI.sitSmile, ramp(tw, 2.5, 3.0));
+  const mariPose =
+    tw < 2.4
+      ? lerpPose(MARI.lie, MARI.sitFloor, up)
+      : lerpPose(MARI.sitFloor, MARI.sitSmile, ramp(tw, 2.5, 3.0));
   const mari: Puppet = {
     pose: mariPose,
     place: { mode: "hip", x: MARI_DOWN_X, y: FLOOR - (50 - 16 * up) * s },
@@ -463,14 +752,27 @@ export const S13: React.FC = () => {
   const cam = blendCamera(CAM_BATH, WIDE, ramp(t, 3.4, 5.5));
   const calm = t > 2.6;
   const at = scene("S13").cues[0].at;
-  const pop = (i: number) => snap(ramp(t, at + TAG_WORDS[i], at + TAG_WORDS[i] + 0.22));
+  const pop = (i: number) =>
+    snap(ramp(t, at + TAG_WORDS[i], at + TAG_WORDS[i] + 0.22));
   return (
     <Frame
       overlay={
         t >= at ? (
-          <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: SAFE.y + 6, gap: 14 }}>
+          <AbsoluteFill
+            style={{
+              justifyContent: "flex-end",
+              alignItems: "center",
+              paddingBottom: SAFE.y + 6,
+              gap: 14,
+            }}
+          >
             <div style={{ scale: `${pop(0)}` }}>
-              <CollageWords text={caption("vo_11").pages[0][0]} size={92} style="ransom" seed="tagline-brand" />
+              <CollageWords
+                text={caption("vo_11").pages[0][0]}
+                size={92}
+                style="ransom"
+                seed="tagline-brand"
+              />
             </div>
             <CollageWords
               text={caption("vo_11").pages[0][1]}
@@ -487,10 +789,31 @@ export const S13: React.FC = () => {
         <SectionWorld
           frame={frame}
           mari={mari}
-          anna={<Anna pose={annaPose} place={{ mode: "stand", x: MARI_DOWN_X - 120 * s, floor: FLOOR }} scale={s} frame={frame} />}
-          device={{ y: FLOOR, led: calm ? LED.ok(0.7 + 0.3 * Math.sin(t * 2)) : LED.warn(1) }}
+          anna={
+            <Anna
+              pose={annaPose}
+              place={{ mode: "stand", x: MARI_DOWN_X - 120 * s, floor: FLOOR }}
+              scale={s}
+              frame={frame}
+            />
+          }
+          device={{
+            y: FLOOR,
+            led: calm ? LED.ok(0.7 + 0.3 * Math.sin(t * 2)) : LED.warn(1),
+          }}
           clockHours={clockAt(60)}
-          extra={calm ? <Rings t={t} x={X_DEV} y={FLOOR - 10} color={PALETTE.teal} speed={0.45} max={170} /> : null}
+          extra={
+            calm ? (
+              <Rings
+                t={t}
+                x={X_DEV}
+                y={FLOOR - 10}
+                color={PALETTE.teal}
+                speed={0.45}
+                max={170}
+              />
+            ) : null
+          }
         />
       </Camera>
     </Frame>

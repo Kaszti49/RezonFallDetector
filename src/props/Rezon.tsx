@@ -12,7 +12,13 @@ export const LED = {
   alarm: (glow = 1): LedState => ({ color: PALETTE.red, glow }),
 };
 
-const LedGlow: React.FC<{ id: string; x: number; y: number; r: number; led: LedState }> = ({ id, x, y, r, led }) => (
+const LedGlow: React.FC<{
+  id: string;
+  x: number;
+  y: number;
+  r: number;
+  led: LedState;
+}> = ({ id, x, y, r, led }) => (
   <>
     <defs>
       <radialGradient id={id}>
@@ -20,7 +26,14 @@ const LedGlow: React.FC<{ id: string; x: number; y: number; r: number; led: LedS
         <stop offset="100%" stopColor={led.color} stopOpacity={0} />
       </radialGradient>
     </defs>
-    <circle cx={x} cy={y} r={r} fill={`url(#${id})`} opacity={led.glow} style={{ mixBlendMode: "screen" }} />
+    <circle
+      cx={x}
+      cy={y}
+      r={r}
+      fill={`url(#${id})`}
+      opacity={led.glow}
+      style={{ mixBlendMode: "screen" }}
+    />
   </>
 );
 
@@ -36,7 +49,17 @@ export const RezonHero: React.FC<{
   seed?: string;
   lidLift?: number;
   inside?: React.ReactNode;
-}> = ({ cx, cy, rx = 300, k = 0.5, h = 110, led = LED.ok(), seed = "rezon", lidLift = 0, inside }) => {
+}> = ({
+  cx,
+  cy,
+  rx = 300,
+  k = 0.5,
+  h = 110,
+  led = LED.ok(),
+  seed = "rezon",
+  lidLift = 0,
+  inside,
+}) => {
   const ry = rx * k;
   const lidT = 16;
   const rl = rx + 5;
@@ -49,7 +72,8 @@ export const RezonHero: React.FC<{
         const a = a0 + ((a1 - a0) * i) / n;
         return [cx + Math.cos(a) * r, yc + Math.sin(a) * r * k];
       });
-    const c = (pts: Pt[], id: string, wobble = 1.2) => cut(pts, `${seed}-${id}`, { wobble, jitter: 0.3, wavelength: 50 });
+    const c = (pts: Pt[], id: string, wobble = 1.2) =>
+      cut(pts, `${seed}-${id}`, { wobble, jitter: 0.3, wavelength: 50 });
     const holes: Pt[] = [];
     for (let row = -5; row <= 5; row++) {
       for (let col = -6; col <= 6; col++) {
@@ -59,12 +83,23 @@ export const RezonHero: React.FC<{
       }
     }
     return {
-      body: c([[cx + rx, cy], ...arc(cy + h, 0, Math.PI), [cx - rx, cy]], "body"),
-      band: c([...arc(cy + 34, 0, Math.PI), ...arc(cy + 78, Math.PI, 0)], "band", 0.9),
+      body: c(
+        [[cx + rx, cy], ...arc(cy + h, 0, Math.PI), [cx - rx, cy]],
+        "body",
+      ),
+      band: c(
+        [...arc(cy + 34, 0, Math.PI), ...arc(cy + 78, Math.PI, 0)],
+        "band",
+        0.9,
+      ),
       layers: Array.from({ length: Math.floor(h / 13) }, (_, j) =>
         toPath(arc(cy + (j + 1) * 13, 0, Math.PI)).replace(/ Z$/, ""),
       ),
-      lidSide: c([...arc(top, 0, Math.PI, rl), ...arc(cy, Math.PI, 0, rl)], "lid-side", 0.8),
+      lidSide: c(
+        [...arc(top, 0, Math.PI, rl), ...arc(cy, Math.PI, 0, rl)],
+        "lid-side",
+        0.8,
+      ),
       lidTop: c(ellipse(cx, top, rl, ryl, 6), "lid-top", 1),
       flutes: Array.from({ length: 64 }, (_, i) => {
         const a = (i / 63) * Math.PI;
@@ -95,23 +130,54 @@ export const RezonHero: React.FC<{
         {/* Internals show only above the body's front rim, so they rise out of the open puck. */}
         <clipPath id={`${seed}-inside`}>
           <path
-            d={`M ${cx - rx - 900} ${cy} ${Array.from({ length: 61 }, (_, i) => {
-              const a = Math.PI - (i / 60) * Math.PI;
-              return `L ${(cx + Math.cos(a) * rx).toFixed(1)} ${(cy + Math.sin(a) * ry).toFixed(1)}`;
-            }).join(" ")} L ${cx + rx + 900} ${cy} V ${cy - 3000} H ${cx - rx - 900} Z`}
+            d={`M ${cx - rx - 900} ${cy} ${Array.from(
+              { length: 61 },
+              (_, i) => {
+                const a = Math.PI - (i / 60) * Math.PI;
+                return `L ${(cx + Math.cos(a) * rx).toFixed(1)} ${(cy + Math.sin(a) * ry).toFixed(1)}`;
+              },
+            ).join(
+              " ",
+            )} L ${cx + rx + 900} ${cy} V ${cy - 3000} H ${cx - rx - 900} Z`}
           />
         </clipPath>
       </defs>
 
-      <path d={g.shadow} fill={PALETTE.ink} opacity={0.5} filter="url(#soft-12)" />
+      <path
+        d={g.shadow}
+        fill={PALETTE.ink}
+        opacity={0.5}
+        filter="url(#soft-12)"
+      />
       {/* Contact line where the puck meets the floor, so it sits instead of floating. */}
-      <ellipse cx={cx + 6} cy={cy + h + 4} rx={rx + 4} ry={ry + 4} fill={PALETTE.ink} opacity={0.55} filter="url(#soft-4)" />
+      <ellipse
+        cx={cx + 6}
+        cy={cy + h + 4}
+        rx={rx + 4}
+        ry={ry + 4}
+        fill={PALETTE.ink}
+        opacity={0.55}
+        filter="url(#soft-4)"
+      />
 
       <Piece d={g.body} fill={PALETTE.cardboard} material="card">
         {g.layers.map((d, i) => (
           <g key={i}>
-            <path d={d} stroke={PALETTE.paper} strokeOpacity={0.16} strokeWidth={1.2} fill="none" transform="translate(0 1.4)" />
-            <path d={d} stroke={PALETTE.ink} strokeOpacity={0.24} strokeWidth={1.6} fill="none" />
+            <path
+              d={d}
+              stroke={PALETTE.paper}
+              strokeOpacity={0.16}
+              strokeWidth={1.2}
+              fill="none"
+              transform="translate(0 1.4)"
+            />
+            <path
+              d={d}
+              stroke={PALETTE.ink}
+              strokeOpacity={0.24}
+              strokeWidth={1.6}
+              fill="none"
+            />
           </g>
         ))}
         <Piece d={g.band} fill={PALETTE.teal} shadow="sh-flat" />
@@ -119,64 +185,127 @@ export const RezonHero: React.FC<{
       </Piece>
 
       {lidLift > 0 ? (
-        <ellipse cx={cx} cy={cy} rx={rx - 3} ry={ry - 2} fill={shade(PALETTE.cardboard, 0.42)} stroke={shade(PALETTE.cardboard, 1.1)} strokeWidth={4} />
+        <ellipse
+          cx={cx}
+          cy={cy}
+          rx={rx - 3}
+          ry={ry - 2}
+          fill={shade(PALETTE.cardboard, 0.42)}
+          stroke={shade(PALETTE.cardboard, 1.1)}
+          strokeWidth={4}
+        />
       ) : null}
       {inside ? <g clipPath={`url(#${seed}-inside)`}>{inside}</g> : null}
-      <g transform={`translate(0 ${-lidLift})`} filter={lidLift > 0 ? "url(#sh)" : undefined}>
-      <Piece d={g.lidSide} fill={shade(PALETTE.kraft, 0.82)} material="card" shadow={null}>
-        <path d={g.flutes} stroke={PALETTE.ink} strokeOpacity={0.28} strokeWidth={2.2} />
-        <path d={g.lidSide} fill={`url(#${seed}-side)`} />
-      </Piece>
-      <Piece d={g.lidTop} fill={PALETTE.kraft} material="kraft" shadow={null}>
-        <path d={g.lidTop} fill={`url(#${seed}-lid)`} />
-        {g.holes.map(([x, y], i) => (
-          <g key={i}>
-            <ellipse cx={x + 1.4} cy={y + 0.9} rx={6.5} ry={6.5 * k} fill={PALETTE.paper} opacity={0.35} />
-            <ellipse cx={x} cy={y} rx={6.5} ry={6.5 * k} fill={PALETTE.ink} opacity={0.82} />
-          </g>
-        ))}
-        {/* Debossed: dark rim top-left, lit rim bottom-right, slightly darker floor. */}
-        <g
-          transform={`translate(${cx} ${top + 92 * k}) scale(1 ${k})`}
-          fontFamily={RUBIK}
-          fontWeight={900}
-          fontSize={92}
-          letterSpacing={12}
-          textAnchor="middle"
-          dominantBaseline="central"
+      <g
+        transform={`translate(0 ${-lidLift})`}
+        filter={lidLift > 0 ? "url(#sh)" : undefined}
+      >
+        <Piece
+          d={g.lidSide}
+          fill={shade(PALETTE.kraft, 0.82)}
+          material="card"
+          shadow={null}
         >
-          <text x={-2.5} y={-2.5} fill={PALETTE.ink} opacity={0.5}>
-            REZON
-          </text>
-          <text x={2.5} y={2.5} fill={PALETTE.paper} opacity={0.45}>
-            REZON
-          </text>
-          <text fill={shade(PALETTE.kraft, 0.88)}>REZON</text>
-        </g>
-      </Piece>
+          <path
+            d={g.flutes}
+            stroke={PALETTE.ink}
+            strokeOpacity={0.28}
+            strokeWidth={2.2}
+          />
+          <path d={g.lidSide} fill={`url(#${seed}-side)`} />
+        </Piece>
+        <Piece d={g.lidTop} fill={PALETTE.kraft} material="kraft" shadow={null}>
+          <path d={g.lidTop} fill={`url(#${seed}-lid)`} />
+          {g.holes.map(([x, y], i) => (
+            <g key={i}>
+              <ellipse
+                cx={x + 1.4}
+                cy={y + 0.9}
+                rx={6.5}
+                ry={6.5 * k}
+                fill={PALETTE.paper}
+                opacity={0.35}
+              />
+              <ellipse
+                cx={x}
+                cy={y}
+                rx={6.5}
+                ry={6.5 * k}
+                fill={PALETTE.ink}
+                opacity={0.82}
+              />
+            </g>
+          ))}
+          {/* Debossed: dark rim top-left, lit rim bottom-right, slightly darker floor. */}
+          <g
+            transform={`translate(${cx} ${top + 92 * k}) scale(1 ${k})`}
+            fontFamily={RUBIK}
+            fontWeight={900}
+            fontSize={92}
+            letterSpacing={12}
+            textAnchor="middle"
+            dominantBaseline="central"
+          >
+            <text x={-2.5} y={-2.5} fill={PALETTE.ink} opacity={0.5}>
+              REZON
+            </text>
+            <text x={2.5} y={2.5} fill={PALETTE.paper} opacity={0.45}>
+              REZON
+            </text>
+            <text fill={shade(PALETTE.kraft, 0.88)}>REZON</text>
+          </g>
+        </Piece>
 
-      <LedGlow id={`${seed}-glow`} x={ledAt[0]} y={ledAt[1]} r={110} led={led} />
-      <ellipse cx={ledAt[0]} cy={ledAt[1] + 3} rx={24} ry={14} fill={shade(PALETTE.kraft, 0.55)} />
-      <ellipse cx={ledAt[0]} cy={ledAt[1]} rx={21} ry={12} fill={led.color} />
-      <ellipse cx={ledAt[0] - 6} cy={ledAt[1] - 4} rx={7} ry={3.4} fill={PALETTE.paper} opacity={0.85} />
+        <LedGlow
+          id={`${seed}-glow`}
+          x={ledAt[0]}
+          y={ledAt[1]}
+          r={110}
+          led={led}
+        />
+        <ellipse
+          cx={ledAt[0]}
+          cy={ledAt[1] + 3}
+          rx={24}
+          ry={14}
+          fill={shade(PALETTE.kraft, 0.55)}
+        />
+        <ellipse cx={ledAt[0]} cy={ledAt[1]} rx={21} ry={12} fill={led.color} />
+        <ellipse
+          cx={ledAt[0] - 6}
+          cy={ledAt[1] - 4}
+          rx={7}
+          ry={3.4}
+          fill={PALETTE.paper}
+          opacity={0.85}
+        />
       </g>
     </g>
   );
 };
 
 // Side view for the house cross-section. (x, y) = center of the base on the floor line.
-export const RezonSide: React.FC<{ x: number; y: number; scale?: number; led?: LedState; seed?: string }> = ({
-  x,
-  y,
-  scale = 1,
-  led = LED.ok(),
-  seed = "rezon-side",
-}) => {
+export const RezonSide: React.FC<{
+  x: number;
+  y: number;
+  scale?: number;
+  led?: LedState;
+  seed?: string;
+}> = ({ x, y, scale = 1, led = LED.ok(), seed = "rezon-side" }) => {
   const p = useMemo(
     () => ({
-      body: cut(roundRect(-40, -30, 80, 30, 10, 4), `${seed}-body`, { wobble: 0.6, wavelength: 20 }),
-      band: cut(roundRect(-41, -23, 82, 11, 3, 4), `${seed}-band`, { wobble: 0.4, wavelength: 20 }),
-      lid: cut(roundRect(-43, -39, 86, 11, 5, 4), `${seed}-lid`, { wobble: 0.5, wavelength: 20 }),
+      body: cut(roundRect(-40, -30, 80, 30, 10, 4), `${seed}-body`, {
+        wobble: 0.6,
+        wavelength: 20,
+      }),
+      band: cut(roundRect(-41, -23, 82, 11, 3, 4), `${seed}-band`, {
+        wobble: 0.4,
+        wavelength: 20,
+      }),
+      lid: cut(roundRect(-43, -39, 86, 11, 5, 4), `${seed}-lid`, {
+        wobble: 0.5,
+        wavelength: 20,
+      }),
     }),
     [seed],
   );

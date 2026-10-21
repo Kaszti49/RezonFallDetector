@@ -2,10 +2,18 @@ import { useMemo } from "react";
 import { scrapClip, tornClip } from "../../lib/clip";
 import { LAYER_SHADOW, PALETTE } from "../../theme";
 
-export const GrainFill: React.FC<{ opacity: number; fiber?: number }> = ({ opacity, fiber = 0 }) => (
-  <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-hidden>
+export const GrainFill: React.FC<{ opacity: number; fiber?: number }> = ({
+  opacity,
+  fiber = 0,
+}) => (
+  <svg
+    style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+    aria-hidden
+  >
     <rect width="100%" height="100%" fill="url(#tex-grain)" opacity={opacity} />
-    {fiber > 0 ? <rect width="100%" height="100%" fill="url(#tex-fiber)" opacity={fiber} /> : null}
+    {fiber > 0 ? (
+      <rect width="100%" height="100%" fill="url(#tex-fiber)" opacity={fiber} />
+    ) : null}
   </svg>
 );
 
@@ -37,7 +45,14 @@ export const TornPaper: React.FC<{
   );
   return (
     <div style={{ filter: shadow ? LAYER_SHADOW : undefined, ...style }}>
-      <div style={{ position: "relative", background: color, clipPath, ...innerStyle }}>
+      <div
+        style={{
+          position: "relative",
+          background: color,
+          clipPath,
+          ...innerStyle,
+        }}
+      >
         <GrainFill opacity={grain} />
         <div style={{ position: "relative" }}>{children}</div>
       </div>

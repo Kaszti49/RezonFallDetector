@@ -6,11 +6,26 @@ import { loadFont as loadUltra } from "@remotion/google-fonts/Ultra";
 import { RUBIK } from "./fonts";
 
 // Display faces for collage titles. All carry latin-ext, so ő/ű render.
-const FRAUNCES = loadFraunces("normal", { weights: ["900"], subsets: ["latin", "latin-ext"] }).fontFamily;
-const ALFA = loadAlfa("normal", { weights: ["400"], subsets: ["latin", "latin-ext"] }).fontFamily;
-const ABRIL = loadAbril("normal", { weights: ["400"], subsets: ["latin", "latin-ext"] }).fontFamily;
-const ULTRA = loadUltra("normal", { weights: ["400"], subsets: ["latin", "latin-ext"] }).fontFamily;
-const PLAYFAIR = loadPlayfair("normal", { weights: ["900"], subsets: ["latin", "latin-ext"] }).fontFamily;
+const FRAUNCES = loadFraunces("normal", {
+  weights: ["900"],
+  subsets: ["latin", "latin-ext"],
+}).fontFamily;
+const ALFA = loadAlfa("normal", {
+  weights: ["400"],
+  subsets: ["latin", "latin-ext"],
+}).fontFamily;
+const ABRIL = loadAbril("normal", {
+  weights: ["400"],
+  subsets: ["latin", "latin-ext"],
+}).fontFamily;
+const ULTRA = loadUltra("normal", {
+  weights: ["400"],
+  subsets: ["latin", "latin-ext"],
+}).fontFamily;
+const PLAYFAIR = loadPlayfair("normal", {
+  weights: ["900"],
+  subsets: ["latin", "latin-ext"],
+}).fontFamily;
 
 export type Face = { family: string; weight: number; scale: number };
 
