@@ -73,6 +73,17 @@ Output: `out/phase2/REZON_animatic.mp4` (960×540, silent, captions on). Composi
 - Walk has slight foot sliding; S01 dust/thud could be stronger; per-scene light grading (warm morning → blue night → calm teal) to refine.
 - S07 is tight: the house finishes assembling just before the cut; real VO timing will decide.
 
+## Phase 3 – full animation (2026-10-21)
+
+Output: `out/phase3/REZON_phase3_1080p.mp4` (1920×1080, CRF 18, with SFX + ambience; no VO yet).
+
+- **Walk without sliding:** the planted foot is locked to the floor; the hip is placed from the stance leg's reach (including the 11 px near/far hip offset). Strides are now the natural leg swing (≈117 px at full scale), so Mari reaches x≈700 in S02, ≈1290 under the camera in S03, and ≈1317 in the house walk. Footstep impacts (floor wave, tape, step sounds) fire at the true heel position. Walks settle into the resting pose over 0.25 s.
+- **S07 fix:** with the estimated VO, the house assembly started on "hanem" and could not finish inside the 7 s scene → S08 opened on a jump. Now the build window (`s07Build()`, shared with the SFX) starts just before "hanem" and always ends ≥ 0.45 s before the cut, whatever the real VO timing.
+- **Mood grading** (`Grade` in `KeyLight.tsx`): amber edge wash breathing with the LED in S11 (alarm), soft teal lift from the center in S13 (relief). Existing: warm morning shaft S02–S04, night-blue S05, rewind tint S06.
+- **Pop-up book:** paper hills, sun and clouds fold up as the book opens (S14–S19).
+- **Device:** lid details (grille, debossed REZON, LED, glow) scale with the device size; lid rim + small shadow. Fixed an unreadable finale device and cleaned up the S08 exploded view.
+- **Tooling note:** Remotion's audio mixing crashes on sparse image-sequence renders (`--frames=a,b,c`) once audio exists. Check renders pass `--props='{"noAudio":true}'`; full renders always include sound (verified).
+
 ## Sound design (2026-10-21)
 
 - **Sources:** Kenney CC0 packs (impact, RPG foley, interface) + sounds synthesized with ffmpeg. All logged in `audio/sfx/CREDITS.md`. No attribution needed, no accounts, no music. Freesound (account needed) and Mixkit (license unverifiable) not used.

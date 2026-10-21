@@ -584,7 +584,16 @@ export const S11: React.FC = () => {
       overlay={
         <>
           {/* Alarm mood: an amber wash from the edges, breathing with the LED. */}
-          <Grade color={PALETTE.warm} strength={ramp(t, 0.2, 1.0, 0, 0.2 + 0.08 * Math.abs(Math.sin(t * 3)))} />
+          <Grade
+            color={PALETTE.warm}
+            strength={ramp(
+              t,
+              0.2,
+              1.0,
+              0,
+              0.2 + 0.08 * Math.abs(Math.sin(t * 3)),
+            )}
+          />
           <ScreenSvg>
             {t >= cue1 ? (
               <SoundBubble
@@ -619,7 +628,14 @@ export const S11: React.FC = () => {
                 cx={X_DEV}
                 cy={FLOOR - 18}
                 r={78}
-                progress={ramp(t, BEATS.s11.countFrom, BEATS.s11.countTo, 0, 1, (v) => v)}
+                progress={ramp(
+                  t,
+                  BEATS.s11.countFrom,
+                  BEATS.s11.countTo,
+                  0,
+                  1,
+                  (v) => v,
+                )}
               />
             </>
           }
@@ -766,7 +782,11 @@ export const S13: React.FC = () => {
   const mariPose =
     tw < 2.4
       ? lerpPose(MARI.lie, MARI.sitFloor, up)
-      : lerpPose(MARI.sitFloor, MARI.sitSmile, ramp(tw, BEATS.s13.smile, BEATS.s13.smile + 0.5));
+      : lerpPose(
+          MARI.sitFloor,
+          MARI.sitSmile,
+          ramp(tw, BEATS.s13.smile, BEATS.s13.smile + 0.5),
+        );
   const mari: Puppet = {
     pose: mariPose,
     place: { mode: "hip", x: MARI_DOWN_X, y: FLOOR - (50 - 16 * up) * s },
@@ -783,7 +803,12 @@ export const S13: React.FC = () => {
       overlay={
         <>
           {/* Relief: once Rezon turns calm, a soft teal lift from the center. */}
-          <Grade color={PALETTE.teal} strength={ramp(t, 2.6, 4.2, 0, 0.12)} from="center" blend="screen" />
+          <Grade
+            color={PALETTE.teal}
+            strength={ramp(t, 2.6, 4.2, 0, 0.12)}
+            from="center"
+            blend="screen"
+          />
           {t >= at ? (
             <AbsoluteFill
               style={{
