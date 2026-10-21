@@ -100,3 +100,33 @@ Record WAV, 48 kHz, 24-bit. Do 3 takes per line, with 1 s of silence before and 
 | Technical depth (selection criterion) | S08 exploded view, S09 tape, S10 detection rule |
 
 **Technical claims (approved by Kaszti, 2026-10-21):** wireless, battery-powered, speaker in the unit, "nem vesz fel hangot" (doesn't record audio), "impact + stillness = fall".
+
+---
+
+## Alternative team lines (Kaszti to choose – not in the film yet)
+
+The film currently uses **set A** (S15–S18 above). Pick one set; then S15–S18, the recording list and the captions are updated together. Every line is ≤ 7 words and ≈ 2–3 seconds. Order is always Kaszti → Viktor → Bence → Máté.
+
+**A – current: "What I give it"**
+- Kaszti: „Én adok neki formát és hangot."
+- Viktor: „Én tanítom meg érezni a lépéseket."
+- Bence: „Én kötöm össze a családdal."
+- Máté: „Én pedig összerakom, hogy működjön is."
+
+**B – "What I do"** (plain and clear: each role in one sentence)
+- Kaszti: „Én tervezem, hogyan néz ki és szól."
+- Viktor: „Én tanítom meg felismerni az esést."
+- Bence: „Én írom a dobozban futó kódot."
+- Máté: „Én forrasztom össze az egészet."
+
+**C – "Mine is…"** (short, rhythmic, a little funny – the easiest to say)
+- Kaszti: „Enyém a dizájn."
+- Viktor: „Enyém az okos rész."
+- Bence: „Enyém a kód."
+- Máté: „Enyém minden, amit megfoghatsz."
+
+**D – "One thought, four voices"** (together they finish one sentence and restate why Rezon exists; follows VO-12 „Mi vagyunk a Rezon csapata.")
+- Kaszti: „Mert mindenkinek van egy Mari nénije."
+- Viktor: „Nem akarjuk kamerával figyelni."
+- Bence: „De tudni akarjuk, hogy jól van."
+- Máté: „Ezért építettük meg a Rezont."

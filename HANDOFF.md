@@ -29,12 +29,13 @@ Git: local only, last commit `491b5a6`. Never push.
 
 ## 3. What I need from Kaszti tomorrow
 
-1. **VO recordings** → `audio/vo/raw/` (keep originals untouched). Expected files (names from SCRIPT.md recording list):
+1. **Team lines:** Kaszti may pick an alternative set (B/C/D at the end of SCRIPT.md, A = current). If so, update SCRIPT.md S15–S18 + recording list + `src/captions.json` (team_1–4 pages/highlights), then `npm run check`.
+2. **VO recordings** → `audio/vo/raw/` (keep originals untouched). Expected files (names from SCRIPT.md recording list):
    `vo_01 … vo_08, dev_01, dev_02, vo_10, vo_11, vo_12, team_1 … team_4` (17 lines) + **10 s room tone**. Ask which take to use if several are delivered (or pick by noise floor / clipping and tell him).
    team_2/3/4 must be Viktor / Bence / Máté's own voices.
-2. **Face photos** → `faces/m{1..4}_closed.jpg`, `faces/m{1..4}_open.jpg` (front, even light, plain background, same distance).
-3. **Caption tweaks** – which ones and how (he said "the caption" needs tweaking: wording? size? position? timing? ask).
-4. **SFX tweaks** – which sounds; also his picks from `audio/sfx/audition/` (thud A/B/C, step A/B, chime A/B/C, phone_buzz A/B; A = current).
+3. **Face photos** → `faces/m{1..4}_closed.jpg`, `faces/m{1..4}_open.jpg` (front, even light, plain background, same distance).
+4. **Caption tweaks** – which ones and how (he said "the caption" needs tweaking: wording? size? position? timing? ask).
+5. **SFX tweaks** – which sounds; also his picks from `audio/sfx/audition/` (thud A/B/C, step A/B, chime A/B/C, phone_buzz A/B; A = current).
 
 ## 4. Next steps, in order
 
