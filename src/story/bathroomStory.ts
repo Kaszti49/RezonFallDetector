@@ -18,8 +18,8 @@ export const STORY_START = { S02: 0, S03: T03, S04: T04, S05: T05 } as const;
 const FLOOR = BATH.floorY;
 
 // She shuffles in with her towel over her arm, then walks over under the camera.
-const WALK_IN: WalkPlan = { t0: 0.3, t1: 4.4, x0: -120, period: 0.6, stride: 95, scale: 1 };
-const WALK_OVER: WalkPlan = { t0: T03, t1: T03 + 3, x0: walkX(WALK_IN, WALK_IN.t1), period: 0.6, stride: 95, scale: 1 };
+const WALK_IN: WalkPlan = { t0: 0.3, t1: 4.5, x0: -120, period: 0.6, scale: 1 };
+const WALK_OVER: WalkPlan = { t0: T03, t1: T03 + 3, x0: walkX(WALK_IN, WALK_IN.t1), period: 0.6, scale: 1 };
 const SPOT = walkX(WALK_OVER, WALK_OVER.t1);
 export const PUDDLE_X = SPOT + 60;
 export const STORY_STEPS: Impact[] = [...walkImpacts(WALK_IN), ...walkImpacts(WALK_OVER)];
@@ -52,12 +52,12 @@ const mariAt = (tau: number): BathState["mari"] => {
   const holding = (p: Pose): Pose => (carry ? { ...p, nearArm: MARI.carry.nearArm } : p);
 
   if (tau < WALK_IN.t1) return { pose: holding(walkPose(WALK_IN, tau)), place: stand(walkX(WALK_IN, tau)), tilt: 0, carry };
-  if (tau < WALK_OVER.t0) return { pose: MARI.carry, place: stand(walkX(WALK_IN, tau)), tilt: 0, carry };
+  if (tau < WALK_OVER.t0) return { pose: holding(walkPose(WALK_IN, tau, MARI.carry)), place: stand(walkX(WALK_IN, tau)), tilt: 0, carry };
   if (tau < WALK_OVER.t1) return { pose: holding(walkPose(WALK_OVER, tau)), place: stand(walkX(WALK_OVER, tau)), tilt: 0, carry };
 
   if (tau < SLIP) {
     const seq: [number, Pose][] = [
-      [WALK_OVER.t1, MARI.carry],
+      [WALK_OVER.t1, walkPose(WALK_OVER, WALK_OVER.t1, MARI.carry)],
       [WALK_OVER.t1 + 0.5, MARI.lookUp],
       [THROW.wind - 0.9, MARI.lookUp],
       [THROW.wind - 0.4, MARI.hesitate],

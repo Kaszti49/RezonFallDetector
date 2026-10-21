@@ -163,33 +163,54 @@ export const mariWalk = (phase: number): Pose => {
   return step % 2 ? mirrorPose(p) : p;
 };
 
-// A stretch of walking: x advances linearly while the cycle runs. Footfalls come from the same plan,
-// so the floor wave, the tape and the footstep sounds land on the frame the foot does.
+// A stretch of walking. The planted foot never slides: the hip sits behind it by the stance leg's
+// reach, and each heel strike lands one full leg swing (STEP) ahead of the last. Footfalls come
+// from the same plan, so the floor wave, the tape and the footstep sounds land where the foot does.
 export type WalkPlan = {
   t0: number;
   t1: number;
-  x0: number;
-  period: number;
-  stride: number;
+  x0: number; // hip x at t0
+  period: number; // seconds per step
   scale: number;
 };
 
-export const walkX = (w: WalkPlan, t: number) =>
-  w.x0 +
-  ((Math.min(Math.max(t, w.t0), w.t1) - w.t0) / w.period) * w.stride * w.scale;
+const REACH_FRONT = footReach(D, WALK[0].nearLeg);
+const REACH_BACK = footReach(D, WALK[0].farLeg);
+export const STEP = REACH_FRONT - REACH_BACK; // ground covered per step at scale 1
 
-export const walkPose = (w: WalkPlan, t: number, rest: Pose = STAND): Pose =>
-  t <= w.t0 || t >= w.t1 ? rest : mariWalk((t - w.t0) / w.period);
+// Reach of the stance leg through one step: planted in front at contact, behind at the next contact.
+const stanceReach = (phase: number) => {
+  const k = (phase - Math.floor(phase)) * 4;
+  const i = Math.min(3, Math.floor(k));
+  const a = WALK[i].nearLeg;
+  const b = i < 3 ? WALK[i + 1].nearLeg : WALK[0].farLeg;
+  const f = k - i;
+  return footReach(D, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+};
+
+const stepsAt = (w: WalkPlan, t: number) => (Math.min(Math.max(t, w.t0), w.t1) - w.t0) / w.period;
+// The stance leg alternates (near on even steps, far on odd), and the two hang from slightly
+// different hip points, so that offset is part of where each foot lands.
+const hipOffset = (n: number) => (n % 2 ? D.hipFar : D.hipNear);
+const plantX = (w: WalkPlan, n: number) => w.x0 + (REACH_FRONT + hipOffset(n) - hipOffset(0) + n * STEP) * w.scale;
+
+export const walkX = (w: WalkPlan, t: number) => {
+  const p = stepsAt(w, t);
+  const n = Math.floor(p);
+  return plantX(w, n) - (stanceReach(p) + hipOffset(n) - hipOffset(0)) * w.scale;
+};
+
+// Walk cycle while walking; afterwards a 0.25 s settle into the resting pose (no pop).
+export const walkPose = (w: WalkPlan, t: number, rest: Pose = STAND): Pose => {
+  if (t <= w.t0) return rest;
+  if (t < w.t1) return mariWalk((t - w.t0) / w.period);
+  return lerpPose(mariWalk((w.t1 - w.t0) / w.period), rest, Math.min(1, (t - w.t1) / 0.25));
+};
 
 export const walkImpacts = (w: WalkPlan): Impact[] => {
   const out: Impact[] = [];
-  for (let n = 0; w.t0 + n * w.period <= w.t1; n++) {
-    const t = w.t0 + n * w.period;
-    out.push({
-      t,
-      x: walkX(w, t) + footReach(D, WALK[0].nearLeg) * w.scale,
-      kind: "step",
-    });
+  for (let n = 0; w.t0 + n * w.period <= w.t1 + 1e-6; n++) {
+    out.push({ t: w.t0 + n * w.period, x: plantX(w, n) + hipOffset(0) * w.scale, kind: "step" });
   }
   return out;
 };

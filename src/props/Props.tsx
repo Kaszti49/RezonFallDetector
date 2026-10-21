@@ -656,20 +656,70 @@ export const Book: React.FC<{ open: number }> = ({ open }) => {
       cover: R(-880, -350, 1760, 600, 18, "book-cover"),
       // Pop-up scenery along the edges: rolling paper hills, a sun, clouds.
       hillsBack: W(
-        [[-850, 230], ...Array.from({ length: 86 }, (_, i): Pt => [-850 + i * 20, 150 - 34 * Math.abs(Math.sin((-850 + i * 20) / 130 + 0.6))]), [850, 230]],
+        [
+          [-850, 230],
+          ...Array.from(
+            { length: 86 },
+            (_, i): Pt => [
+              -850 + i * 20,
+              150 - 34 * Math.abs(Math.sin((-850 + i * 20) / 130 + 0.6)),
+            ],
+          ),
+          [850, 230],
+        ],
         "book-hills-back",
         1.2,
       ),
       hillsFront: W(
-        [[-850, 230], ...Array.from({ length: 86 }, (_, i): Pt => [-850 + i * 20, 185 - 22 * Math.abs(Math.sin((-850 + i * 20) / 95))]), [850, 230]],
+        [
+          [-850, 230],
+          ...Array.from(
+            { length: 86 },
+            (_, i): Pt => [
+              -850 + i * 20,
+              185 - 22 * Math.abs(Math.sin((-850 + i * 20) / 95)),
+            ],
+          ),
+          [850, 230],
+        ],
         "book-hills-front",
         1.2,
       ),
       sun: R(-760, -290, 104, 104, 52, "book-sun", 1),
       clouds: [
-        W([[-560, -214], [-530, -246], [-486, -252], [-452, -232], [-430, -212]], "book-cloud-1", 1.6),
-        W([[520, -232], [552, -268], [604, -274], [646, -252], [668, -230]], "book-cloud-2", 1.6),
-        W([[250, -270], [272, -292], [306, -296], [330, -280], [344, -266]], "book-cloud-3", 1.4),
+        W(
+          [
+            [-560, -214],
+            [-530, -246],
+            [-486, -252],
+            [-452, -232],
+            [-430, -212],
+          ],
+          "book-cloud-1",
+          1.6,
+        ),
+        W(
+          [
+            [520, -232],
+            [552, -268],
+            [604, -274],
+            [646, -252],
+            [668, -230],
+          ],
+          "book-cloud-2",
+          1.6,
+        ),
+        W(
+          [
+            [250, -270],
+            [272, -292],
+            [306, -296],
+            [330, -280],
+            [344, -266],
+          ],
+          "book-cloud-3",
+          1.4,
+        ),
       ],
     }),
     [],
@@ -711,10 +761,20 @@ export const Book: React.FC<{ open: number }> = ({ open }) => {
         </g>
       ))}
       <g transform={up(230, 0.35)}>
-        <Piece d={p.hillsBack} fill={shade(PALETTE.cardboard, 1.08)} material="card" depth={4} />
+        <Piece
+          d={p.hillsBack}
+          fill={shade(PALETTE.cardboard, 1.08)}
+          material="card"
+          depth={4}
+        />
       </g>
       <g transform={up(230, 0.45)}>
-        <Piece d={p.hillsFront} fill={shade(PALETTE.cardboard, 0.9)} material="card" depth={5} />
+        <Piece
+          d={p.hillsFront}
+          fill={shade(PALETTE.cardboard, 0.9)}
+          material="card"
+          depth={5}
+        />
       </g>
     </g>
   );

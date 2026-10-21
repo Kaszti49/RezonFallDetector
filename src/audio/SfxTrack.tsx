@@ -1,7 +1,7 @@
 import { Audio } from "@remotion/media";
 import { interpolate, Sequence, staticFile } from "remotion";
 import { REWIND_END, S01_HIT } from "../scenes/Problem";
-import { BEATS, SECTION } from "../scenes/Product";
+import { BEATS, s07Build, SECTION } from "../scenes/Product";
 import { FALL_DELAY, FALL_HIT, STORY_END, STORY_START, STORY_STEPS, THROW } from "../story/bathroomStory";
 import { FPS, lineTiming, scene, TOTAL_FRAMES, wordAt, type SceneId } from "../timeline";
 
@@ -41,8 +41,9 @@ const w07 = (i: number) => wordAt("S07", "vo_06", i);
 add("stamp", at("S07", w07(0)));
 add("peel", at("S07", w07(6) - 0.1));
 add("camera_fall", at("S07", w07(6) + 1.0), 0.6);
-add("paper_slide", at("S07", w07(8) - 0.1), 0.7);
-[0.35, 0.8, 1.3].forEach((d) => add("paper_slide_short", at("S07", w07(8) + d), 0.7));
+const build07 = s07Build();
+add("paper_slide", at("S07", build07.start), 0.7);
+[0.25, 0.55, 0.85].forEach((f) => add("paper_slide_short", at("S07", build07.start + f * (build07.end - build07.start)), 0.7));
 
 // S08 – the device lands, opens, labels pop on their words, snaps shut.
 const w08 = (i: number) => wordAt("S08", "vo_07", i);

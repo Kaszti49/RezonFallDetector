@@ -8,7 +8,7 @@ import {
   type CameraState,
 } from "../components/Camera";
 import { CollageLetters, CollageWords } from "../components/Collage";
-import { KeyLight } from "../components/material/KeyLight";
+import { Grade, KeyLight } from "../components/material/KeyLight";
 import { Piece } from "../components/material/Piece";
 import { Seismograph } from "../components/Seismograph";
 import { floorEnvelope, type Impact } from "../fx/ripple";
@@ -66,6 +66,14 @@ export const BEATS = {
   s13: { smile: 2.5 },
 } as const;
 
+// S07: the house assembles from just before "hanem maga a ház" and always lands 0.45 s
+// before the cut, so S08 never opens on a jump. Shared with the sound track.
+export const s07Build = () => {
+  const w8 = wordAt("S07", "vo_06", 8);
+  const end = Math.min(w8 + 1.3, scene("S07").seconds - 0.45);
+  return { start: Math.min(w8 - 0.6, end - 1.4), end };
+};
+
 const X_DEV = 1490; // Rezon on the bathroom floor, between sink and tub
 const MARI_SCALE = 0.42; // matches the bathroom set's scale inside the house
 const FLOOR = HOUSE.floorY;
@@ -79,7 +87,6 @@ const SEC_WALK: WalkPlan = {
   t1: 10.4,
   x0: 330,
   period: 0.5,
-  stride: 106,
   scale: MARI_SCALE,
 };
 const SEC_X = walkX(SEC_WALK, SEC_WALK.t1);
@@ -217,7 +224,8 @@ export const S07: React.FC = () => {
   const t = frame / FPS;
   const w = (i: number) => wordAt("S07", "vo_06", i);
   const peel = ramp(t, w(6) - 0.1, w(6) + 0.9, 0, 1, (v) => v);
-  const build = ramp(t, w(8) - 0.15, w(8) + 2.1);
+  const B = s07Build();
+  const build = ramp(t, B.start, B.end);
   const cam = blendCamera(BATH_FILL, WIDE, build);
   const slam = keys(t, [
     [w(0) - 0.12, 2.6],
@@ -574,17 +582,21 @@ export const S11: React.FC = () => {
   return (
     <Frame
       overlay={
-        <ScreenSvg>
-          {t >= cue1 ? (
-            <SoundBubble
-              x={dev.x - 430}
-              y={dev.y - 300}
-              text={caption(speaking.line).pages[0][0]}
-              revealed={shown}
-              tail={[dev.x - 40, dev.y - 70]}
-            />
-          ) : null}
-        </ScreenSvg>
+        <>
+          {/* Alarm mood: an amber wash from the edges, breathing with the LED. */}
+          <Grade color={PALETTE.warm} strength={ramp(t, 0.2, 1.0, 0, 0.2 + 0.08 * Math.abs(Math.sin(t * 3)))} />
+          <ScreenSvg>
+            {t >= cue1 ? (
+              <SoundBubble
+                x={dev.x - 430}
+                y={dev.y - 300}
+                text={caption(speaking.line).pages[0][0]}
+                revealed={shown}
+                tail={[dev.x - 40, dev.y - 70]}
+              />
+            ) : null}
+          </ScreenSvg>
+        </>
       }
     >
       <Camera state={cam}>
@@ -769,32 +781,36 @@ export const S13: React.FC = () => {
   return (
     <Frame
       overlay={
-        t >= at ? (
-          <AbsoluteFill
-            style={{
-              justifyContent: "flex-end",
-              alignItems: "center",
-              paddingBottom: SAFE.y + 6,
-              gap: 14,
-            }}
-          >
-            <div style={{ scale: `${pop(0)}` }}>
+        <>
+          {/* Relief: once Rezon turns calm, a soft teal lift from the center. */}
+          <Grade color={PALETTE.teal} strength={ramp(t, 2.6, 4.2, 0, 0.12)} from="center" blend="screen" />
+          {t >= at ? (
+            <AbsoluteFill
+              style={{
+                justifyContent: "flex-end",
+                alignItems: "center",
+                paddingBottom: SAFE.y + 6,
+                gap: 14,
+              }}
+            >
+              <div style={{ scale: `${pop(0)}` }}>
+                <CollageWords
+                  text={caption("vo_11").pages[0][0]}
+                  size={92}
+                  style="ransom"
+                  seed="tagline-brand"
+                />
+              </div>
               <CollageWords
-                text={caption("vo_11").pages[0][0]}
-                size={92}
+                text={caption("vo_11").pages[0][1]}
+                size={54}
                 style="ransom"
-                seed="tagline-brand"
+                seed="tagline"
+                scales={[1, 2, 3, 4, 5, 6, 7].map(pop)}
               />
-            </div>
-            <CollageWords
-              text={caption("vo_11").pages[0][1]}
-              size={54}
-              style="ransom"
-              seed="tagline"
-              scales={[1, 2, 3, 4, 5, 6, 7].map(pop)}
-            />
-          </AbsoluteFill>
-        ) : null
+            </AbsoluteFill>
+          ) : null}
+        </>
       }
     >
       <Camera state={cam}>

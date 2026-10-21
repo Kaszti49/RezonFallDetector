@@ -1,4 +1,4 @@
-import { AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, getInputProps, Sequence } from "remotion";
 import { SfxTrack } from "./audio/SfxTrack";
 import { CaptionTrack } from "./components/CaptionTrack";
 import { Enter } from "./components/Enter";
@@ -29,6 +29,8 @@ export const Film: React.FC = () => (
       );
     })}
     <CaptionTrack />
-    <SfxTrack />
+    {/* Check renders of scattered frames pass --props={"noAudio":true}: Remotion's audio
+        mixing cannot write a non-contiguous frame list. Full renders always include sound. */}
+    {getInputProps().noAudio ? null : <SfxTrack />}
   </AbsoluteFill>
 );
