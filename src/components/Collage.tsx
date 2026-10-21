@@ -99,11 +99,12 @@ export const CollageLetters: React.FC<{ text: string; size: number; style: Title
 };
 
 // Longer lines (tagline): one scrap per word keeps it readable.
-export const CollageWords: React.FC<{ text: string; size: number; style: TitleStyle; seed: string }> = ({
+export const CollageWords: React.FC<{ text: string; size: number; style: TitleStyle; seed: string; scales?: readonly number[] }> = ({
   text,
   size,
   style,
   seed,
+  scales,
 }) => {
   const words = useMemo(() => text.split(" "), [text]);
   const scraps = useMemo(
@@ -113,9 +114,11 @@ export const CollageWords: React.FC<{ text: string; size: number; style: TitleSt
   return (
     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: size * 0.18 }}>
       {words.map((w, i) => (
-        <ScrapTile key={i} s={scraps[i]} size={size} pad={[size * 0.12, size * 0.28]}>
-          {w}
-        </ScrapTile>
+        <div key={i} style={{ scale: `${scales?.[i] ?? 1}` }}>
+          <ScrapTile s={scraps[i]} size={size} pad={[size * 0.12, size * 0.28]}>
+            {w}
+          </ScrapTile>
+        </div>
       ))}
     </div>
   );

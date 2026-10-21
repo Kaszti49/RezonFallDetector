@@ -10,8 +10,8 @@ import { RUBIK, WEIGHT } from "../fonts";
 import { floorEnvelope, walkImpacts } from "../fx/ripple";
 import { cut, roundRect } from "../lib/shapes";
 import { LED, RezonHero, RezonSide } from "../props/Rezon";
-import { Mari, MARI_POSES } from "../puppets/Mari";
-import { BATH, BathroomSet, WindowLight } from "../sets/Bathroom";
+import { Mari, MARI, MARI_POSES } from "../puppets/Mari";
+import { BATH, BathroomSet, WallCamera, WindowLight } from "../sets/Bathroom";
 import { FloorRipple, HOUSE, HouseBack, HouseFront } from "../sets/HouseSection";
 import { PerspectiveFloor } from "../sets/PerspectiveFloor";
 import { DERIVED, PALETTE, SAFE, VIDEO } from "../theme";
@@ -49,8 +49,8 @@ export const StyleBathroom: React.FC = () => (
       />
     }
   >
-    <BathroomSet />
-    <Mari x={470} y={BATH.floorY} pose={MARI_POSES.shuffle} />
+    <BathroomSet camera={<WallCamera ledOn />} />
+    <Mari pose={MARI.stand} place={{ mode: "stand", x: 470, floor: BATH.floorY }} />
     <WindowLight />
   </Stage>
 );
@@ -101,7 +101,7 @@ export const StyleSection: React.FC = () => (
     }
   >
     <HouseBack />
-    <Mari x={640} y={HOUSE.floorY} scale={0.62} pose={MARI_POSES.walkPass} />
+    <Mari pose={MARI_POSES.walkPass} place={{ mode: "stand", x: 640, floor: HOUSE.floorY }} scale={0.62} />
     <RezonSide x={X_DEVICE} y={HOUSE.floorY} led={LED.ok(Math.min(1, floorEnvelope(X_DEVICE, SECTION_T, SECTION_STEPS) / 2))} />
     <HouseFront />
     <FloorRipple t={SECTION_T} impacts={SECTION_STEPS} />

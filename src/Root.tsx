@@ -1,10 +1,13 @@
-import { Folder, Still } from "remotion";
+import { Composition, Folder, Still } from "remotion";
+import { Film } from "./Film";
 import { StyleBathroom, StyleDevice, StyleSection, StyleTitles } from "./stills/Phase1";
 import { FontTest } from "./tests/FontTest";
+import { FPS, TOTAL_FRAMES } from "./timeline";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition id="REZON" component={Film} durationInFrames={TOTAL_FRAMES} fps={FPS} width={1920} height={1080} />
       <Folder name="Tests">
         <Still id="FontTest" component={FontTest} width={1920} height={1080} />
       </Folder>

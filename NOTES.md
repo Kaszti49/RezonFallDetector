@@ -8,8 +8,8 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 | Phase | Status | Approved |
 |---|---|---|
 | 0 Setup | done | 2026-10-21 |
-| 1 Style test (kill test) | done, awaiting approval | – |
-| 2 Animatic (960×540, silent + captions) | – | – |
+| 1 Style test (kill test) | done | 2026-10-21 |
+| 2 Animatic (960×540, silent + captions) | done, awaiting approval | – |
 | 3 Full animation | – | – |
 | 4 Audio pass (VO + SFX + master) | – | – |
 | 5 Team pass (heads, lines, mouth flaps) | – | – |
@@ -29,6 +29,9 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 - 2026-10-21 – Kaszti: caption word-sync = **method (a)** (silence detection + syllable-weighted timing). Switch to (b) whisper only if Kaszti dislikes the sync.
 - 2026-10-21 – Kaszti: **no music, but ambience and SFX are very important to fill the empty space.** → Every scene gets a quiet ambience bed (room tone, tap drip, street/birds outside the window, clock) under the spot effects. Deliberate silences stay "quiet", never digital-dead.
 - 2026-10-21 – Kaszti: will deliver the recorded lines after Phase 2 (today).
+- 2026-10-21 – Kaszti: **Phase 1 approved** – procedural cardboard look passes the kill test (no texture fallback).
+- 2026-10-21 – Kaszti: **title style C – ransom mix** (letters on cut scraps, one display face per letter).
+- 2026-10-21 – Kaszti: **Mari's cardigan stays the palette blend (plum-mauve)**; no new color.
 - 2026-10-21 – Kaszti: **text and captions on paper/cardboard backgrounds.** Reference: `out/Font example.png` (ransom-note collage alphabet: each letter on its own cut/torn scrap of cream, kraft, grey or dark-brown paper, slightly rotated, heavy serif letters, own shadow per scrap).
 
 ## Decisions
@@ -39,6 +42,42 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 - 2026-10-21 – **Font:** Rubik via `@remotion/google-fonts`, weights 500 (captions) / 700 (tags) / 900 (titles), subsets `latin` + `latin-ext`. latin-ext range U+0100–02BA covers Ő/ő/Ű/ű (U+0150/0151/0170/0171).
 - 2026-10-21 – **Glyph test:** `out/phase0/font_test.png`. Fallback font deliberately set to Courier New so any missing glyph would show as typewriter type – none did. Ő ű render with the double acute at 44 px (caption) and 116 px (cardboard title). PASS.
 - 2026-10-21 – **Timing estimates before real VO:** Hungarian syllables = vowels, so VO length is estimated from the exact script text (calm 4.6 syl/s). Phase 2 animatic uses these; Phase 4 replaces them with measured durations.
+
+## Phase 2 – animatic (2026-10-21)
+
+Output: `out/phase2/REZON_animatic.mp4` (960×540, silent, captions on). Composition `REZON` = `src/Film.tsx`. Render: `npm run render:animatic` (runs the script check + type check first).
+
+**How it is built**
+- `src/captions.json` – caption pages (line breaks at punctuation, BBC rules), highlight words, tone, and every on-screen string. `npm run check` (`scripts/check-script.mjs`) verifies each caption against the SCRIPT.md recording list **character for character**, ≤ 38 chars/line, ≤ 2 lines/page, and that every on-screen string exists in SCRIPT.md or CLAUDE.md. Fails the build on any mismatch.
+- `src/timeline.ts` – the only place timing lives. Scene slots = SCRIPT.md (total **116.0 s = 3480 frames**). VO length estimated from syllables (calm 4.6 syl/s + pauses at punctuation) until real audio is measured. The build throws if the total > 118 s or if any VO line runs past its scene.
+- Picture events are cued to **VO words** (`wordAt`), so they re-sync automatically when the real recordings replace the estimates: 2031 stamp on "Kétezer-harmincegy", camera peels on "kamera", house assembles on "hanem maga a ház", Wi-Fi tag on "vezeték", geofon tag on "érzékeli", towel lands at the end of "fürdeni?", phone lights on "riasztja", tagline scraps pop word by word.
+- S02–S05 are one story function (`src/story/bathroomStory.ts`); S06 plays it backwards, so the rewind shows exactly what the viewer saw.
+- S06 → S07 is a seamless hand-off: the bathroom set fits the house's right room exactly, the camera pulls back and the house assembles around it in paper pieces.
+- One event list per section drives floor wave, LED, tape (and, in Phase 4, footstep SFX), so picture and signal always agree.
+- Transitions: S02 flap, S09 slide, S12 slide, S13 flip, S14 flip; everything else is a cut or continuous. No crossfades.
+
+**Decisions for Kaszti to confirm**
+- **Team slide:** brief says each member slides *right*. Literal right-slides would end with the row reading M4…M1. I slide each member to their own slot so the final row reads **M1 → M4 left to right** (speaking order), device on the pedestal in the middle.
+- **Device voice (S11)** is captioned inside the sound-wave speech bubble, not on the bottom strip. **Tagline (VO-11)** is captioned by the collage title itself (word by word), not a strip.
+- **S07 order:** the 2031 stamp lands on the word "Kétezer-harmincegy" (start of the line), then the camera peels, then the pull-back – i.e. picture follows the voice.
+- Mari inside the house is scaled to match the bathroom furniture (0.42).
+- Fall ripple: α raised to 4.5 so the tape shows spike → **flat line** clearly within S10.
+
+**Known animatic gaps (Phase 3 work)**
+- Pop-up book pages are plain; add pop-up paper details.
+- Team heads are placeholders (Phase 5).
+- Walk has slight foot sliding; S01 dust/thud could be stronger; per-scene light grading (warm morning → blue night → calm teal) to refine.
+- S07 is tight: the house finishes assembling just before the cut; real VO timing will decide.
+
+## Recording guide (for the lines Kaszti delivers after Phase 2)
+
+- Room: the quietest, softest room (clothes, curtains, sofa). A wardrobe full of clothes is ideal. No echoey bathroom or kitchen.
+- Mic: phone is fine. 15–20 cm from the mouth, slightly to the side (no "p"/"b" pops). Same distance and level for every line.
+- Format: WAV 48 kHz if the app allows; otherwise the phone's normal format (I convert). One file per line, named as in SCRIPT.md (`vo_01.wav` … `team_4.wav`), 3 takes each, 1 s silence before and after.
+- Also record **10 s of room tone** (silence, same spot) → used for clean noise reduction.
+- Pace: calm and clear, but **VO-03 at a normal pace** (it is the tightest line). DEV-01/02 calm and slightly slower; I make them sound like the device's small speaker.
+- Team lines: **each member records their own line** (team_1 Kaszti, team_2 Viktor, team_3 Bence, team_4 Máté).
+- Drop the files into `audio/vo/raw/` (or send them; I file them).
 
 ## Phase 1 – style test (2026-10-21)
 

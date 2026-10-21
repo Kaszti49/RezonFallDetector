@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { floorWave, type Impact } from "../fx/ripple";
+import { floorEnvelope, floorWave, type Impact } from "../fx/ripple";
 import { RUBIK, WEIGHT } from "../fonts";
 import { tornRectPath } from "../lib/paths";
 import { cut, roundRect } from "../lib/shapes";
@@ -52,6 +52,25 @@ export const Seismograph: React.FC<{
   }).join(" ");
   const nowY = mid - Math.max(-mid + 10, Math.min(mid - 10, floorWave(xDevice, t, impacts) * gain));
 
+  // Where a fall dominates the signal, the trace is redrawn in alarm red.
+  const falls = impacts.filter((im) => im.kind === "fall");
+  const steps = impacts.filter((im) => im.kind !== "fall");
+  let alarm = "";
+  if (falls.length) {
+    let pen = false;
+    for (let i = 0; i <= n; i++) {
+      const tt = t - windowSec + (i / n) * windowSec;
+      if (floorEnvelope(xDevice, tt, falls) > 0.05 + floorEnvelope(xDevice, tt, steps)) {
+        const v = floorWave(xDevice, tt, impacts) * gain;
+        const py = mid - Math.max(-mid + 10, Math.min(mid - 10, v));
+        alarm += `${pen ? "L" : "M"}${(plotX0 + (i / n) * plotW).toFixed(1)} ${py.toFixed(1)} `;
+        pen = true;
+      } else {
+        pen = false;
+      }
+    }
+  }
+
   return (
     <g transform={`translate(${x} ${y})`}>
       <Piece d={paths.tape} fill={PALETTE.paper}>
@@ -69,6 +88,7 @@ export const Seismograph: React.FC<{
         ))}
         <line x1={plotX0} x2={plotX0 + plotW} y1={mid} y2={mid} stroke={PALETTE.ink} strokeOpacity={0.2} strokeWidth={1.4} />
         <path d={trace} stroke={color} strokeWidth={3} fill="none" strokeLinejoin="round" />
+        {alarm ? <path d={alarm} stroke={PALETTE.red} strokeWidth={3.6} fill="none" strokeLinejoin="round" /> : null}
       </Piece>
       <g transform={`translate(${plotX0 + plotW} ${nowY})`}>
         <Piece d={paths.stylus} fill={PALETTE.cardboard} material="card" shadow="sh-s" />

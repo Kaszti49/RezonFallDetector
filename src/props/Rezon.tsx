@@ -34,7 +34,9 @@ export const RezonHero: React.FC<{
   h?: number;
   led?: LedState;
   seed?: string;
-}> = ({ cx, cy, rx = 300, k = 0.5, h = 110, led = LED.ok(), seed = "rezon" }) => {
+  lidLift?: number;
+  inside?: React.ReactNode;
+}> = ({ cx, cy, rx = 300, k = 0.5, h = 110, led = LED.ok(), seed = "rezon", lidLift = 0, inside }) => {
   const ry = rx * k;
   const lidT = 16;
   const rl = rx + 5;
@@ -90,6 +92,15 @@ export const RezonHero: React.FC<{
           <stop offset="55%" stopColor={PALETTE.paper} stopOpacity={0} />
           <stop offset="100%" stopColor={PALETTE.ink} stopOpacity={0.22} />
         </radialGradient>
+        {/* Internals show only above the body's front rim, so they rise out of the open puck. */}
+        <clipPath id={`${seed}-inside`}>
+          <path
+            d={`M ${cx - rx - 900} ${cy} ${Array.from({ length: 61 }, (_, i) => {
+              const a = Math.PI - (i / 60) * Math.PI;
+              return `L ${(cx + Math.cos(a) * rx).toFixed(1)} ${(cy + Math.sin(a) * ry).toFixed(1)}`;
+            }).join(" ")} L ${cx + rx + 900} ${cy} V ${cy - 3000} H ${cx - rx - 900} Z`}
+          />
+        </clipPath>
       </defs>
 
       <path d={g.shadow} fill={PALETTE.ink} opacity={0.5} filter="url(#soft-12)" />
@@ -107,6 +118,11 @@ export const RezonHero: React.FC<{
         <path d={g.body} fill={`url(#${seed}-side)`} />
       </Piece>
 
+      {lidLift > 0 ? (
+        <ellipse cx={cx} cy={cy} rx={rx - 3} ry={ry - 2} fill={shade(PALETTE.cardboard, 0.42)} stroke={shade(PALETTE.cardboard, 1.1)} strokeWidth={4} />
+      ) : null}
+      {inside ? <g clipPath={`url(#${seed}-inside)`}>{inside}</g> : null}
+      <g transform={`translate(0 ${-lidLift})`} filter={lidLift > 0 ? "url(#sh)" : undefined}>
       <Piece d={g.lidSide} fill={shade(PALETTE.kraft, 0.82)} material="card" shadow={null}>
         <path d={g.flutes} stroke={PALETTE.ink} strokeOpacity={0.28} strokeWidth={2.2} />
         <path d={g.lidSide} fill={`url(#${seed}-side)`} />
@@ -143,6 +159,7 @@ export const RezonHero: React.FC<{
       <ellipse cx={ledAt[0]} cy={ledAt[1] + 3} rx={24} ry={14} fill={shade(PALETTE.kraft, 0.55)} />
       <ellipse cx={ledAt[0]} cy={ledAt[1]} rx={21} ry={12} fill={led.color} />
       <ellipse cx={ledAt[0] - 6} cy={ledAt[1] - 4} rx={7} ry={3.4} fill={PALETTE.paper} opacity={0.85} />
+      </g>
     </g>
   );
 };

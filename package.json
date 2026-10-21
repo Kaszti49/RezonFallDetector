@@ -31,7 +31,9 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "check": "node scripts/check-script.mjs && tsc",
+    "render:animatic": "npm run check && remotion render REZON out/phase2/REZON_animatic.mp4 --scale=0.5"
   },
   "allowScripts": {
     "esbuild": false

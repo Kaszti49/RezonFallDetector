@@ -123,9 +123,34 @@ const build = () => {
 
 export const useHouse = () => useMemo(build, []);
 
+// The bathroom set (1920 × 1080) fits exactly into the right room: same floor line, same width.
+export const ROOM = { x: 956, y: 226, w: 780, h: 384 } as const;
+export const BATH_SCALE = ROOM.w / 1920;
+export const BATH_ORIGIN = { x: ROOM.x, y: 610 - 890 * BATH_SCALE } as const;
+// Framing that shows exactly the bathroom set: the hand-off frame from S06 to S07.
+export const BATH_FILL = { cx: ROOM.x + ROOM.w / 2, cy: BATH_ORIGIN.y + 540 * BATH_SCALE, zoom: 1 / BATH_SCALE } as const;
+
+export const BathroomInHouse: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <g>
+    <defs>
+      <clipPath id="room-clip">
+        <rect x={ROOM.x} y={ROOM.y} width={ROOM.w} height={2000} />
+      </clipPath>
+    </defs>
+    <g clipPath="url(#room-clip)">
+      <g transform={`translate(${BATH_ORIGIN.x} ${BATH_ORIGIN.y.toFixed(2)}) scale(${BATH_SCALE})`}>{children}</g>
+    </g>
+  </g>
+);
+
+const slide = (dx: number, dy: number, p: number) => (p >= 1 ? undefined : `translate(${(dx * (1 - p)).toFixed(1)} ${(dy * (1 - p)).toFixed(1)})`);
+
 // Backdrop, table, roof, back walls and furniture: everything behind the characters.
-export const HouseBack: React.FC = () => {
+// `assemble` 0 → 1 slides the pieces in around the bathroom (S07). `rightRoom` replaces the default bathroom.
+export const HouseBack: React.FC<{ assemble?: number; rightRoom?: React.ReactNode }> = ({ assemble = 1, rightRoom }) => {
   const P = useHouse();
+  const a = (from: number, to: number) => Math.min(1, Math.max(0, (assemble - from) / (to - from)));
+  const ease = (p: number) => 1 - Math.pow(1 - p, 3);
   return (
     <g>
       <defs>
@@ -139,83 +164,107 @@ export const HouseBack: React.FC = () => {
       <rect width={1920} height={1080} fill={PALETTE.kraft} />
       <rect width={1920} height={1080} fill="url(#tex-grain)" opacity={0.5} />
       <rect width={1920} height={1080} filter="url(#f-mottle)" />
-      <Piece d={P.table} fill={PALETTE.cardboard} material="card" shadow={null} />
-
-      <Piece d={P.chimney} fill={PALETTE.cardboard} material="card" depth={5} />
-      <Piece d={P.roof} fill={PALETTE.cardboard} material="card" depth={8}>
-        <g clipPath="url(#roof-clip)">
-          {P.shingles.map((s, i) => (
-            <Piece key={i} d={s.d} fill={s.fill} material="kraft" shadow="sh-flat" />
-          ))}
-        </g>
-      </Piece>
-      <Piece d={P.eave} fill={shade(PALETTE.cardboard, 0.9)} material="card" depth={4} />
-
-      <Piece d={P.leftWall} fill={PALETTE.paper} shadow={null}>
-        <path d={P.leftWall} fill="url(#wallpaper)" />
-      </Piece>
-      <Piece d={P.rightWall} fill={PALETTE.kraft} material="kraft" shadow={null} />
-      <g filter="url(#sh-flat)">
-        {P.rightTiles.map((d, i) => (
-          <Piece key={i} d={d} fill={PALETTE.paper} shadow={null} />
-        ))}
+      <g transform={slide(0, 420, ease(a(0.05, 0.5)))}>
+        <Piece d={P.table} fill={PALETTE.cardboard} material="card" shadow={null} />
       </g>
-      <Piece d={P.skirting} fill={PALETTE.cardboard} material="card" shadow="sh-flat" />
 
-      <Piece d={P.frame} fill={PALETTE.cardboard} material="card" depth={4}>
-        <Piece d={P.picture} fill={DERIVED.sky} shadow="sh-flat">
-          <path d={P.pictureSun} fill={PALETTE.warm} />
+      <g transform={slide(0, -760, ease(a(0.35, 0.9)))}>
+        <Piece d={P.chimney} fill={PALETTE.cardboard} material="card" depth={5} />
+        <Piece d={P.roof} fill={PALETTE.cardboard} material="card" depth={8}>
+          <g clipPath="url(#roof-clip)">
+            {P.shingles.map((s, i) => (
+              <Piece key={i} d={s.d} fill={s.fill} material="kraft" shadow="sh-flat" />
+            ))}
+          </g>
         </Piece>
-      </Piece>
-      <Piece d={P.cabinet} fill={shade(PALETTE.cardboard, 1.05)} material="card" depth={6} />
-      <Piece d={P.lampStem} fill={DERIVED.steel} shadow="sh-s" />
-      <Piece d={P.lampShade} fill={mix([PALETTE.warm, 0.45], [PALETTE.paper, 0.55])} depth={3} />
+        <Piece d={P.eave} fill={shade(PALETTE.cardboard, 0.9)} material="card" depth={4} />
+      </g>
 
-      <Piece d={P.mirrorFrame} fill={PALETTE.cardboard} material="card" depth={4}>
-        <path d={P.mirrorGlass} fill={DERIVED.mirror} />
-      </Piece>
-      <Piece d={P.pedestal} fill={shade(PALETTE.paper, 0.97)} />
-      <Piece d={P.basin} fill={PALETTE.paper} depth={2} />
-      <Piece d={P.sinkRim} fill={PALETTE.paper} depth={3} />
-      <Piece d={P.tub} fill={PALETTE.paper} depth={5} />
-      <Piece d={P.tubRim} fill={PALETTE.paper} depth={3} />
+      <g transform={slide(-1150, 0, ease(a(0, 0.55)))}>
+        <Piece d={P.leftWall} fill={PALETTE.paper} shadow={null}>
+          <path d={P.leftWall} fill="url(#wallpaper)" />
+        </Piece>
+        <Piece d={P.skirting} fill={PALETTE.cardboard} material="card" shadow="sh-flat" />
+        <Piece d={P.frame} fill={PALETTE.cardboard} material="card" depth={4}>
+          <Piece d={P.picture} fill={DERIVED.sky} shadow="sh-flat">
+            <path d={P.pictureSun} fill={PALETTE.warm} />
+          </Piece>
+        </Piece>
+        <Piece d={P.cabinet} fill={shade(PALETTE.cardboard, 1.05)} material="card" depth={6} />
+        <Piece d={P.lampStem} fill={DERIVED.steel} shadow="sh-s" />
+        <Piece d={P.lampShade} fill={mix([PALETTE.warm, 0.45], [PALETTE.paper, 0.55])} depth={3} />
+      </g>
+
+      {rightRoom ?? (
+        <g>
+          <Piece d={P.rightWall} fill={PALETTE.kraft} material="kraft" shadow={null} />
+          <g filter="url(#sh-flat)">
+            {P.rightTiles.map((d, i) => (
+              <Piece key={i} d={d} fill={PALETTE.paper} shadow={null} />
+            ))}
+          </g>
+          <Piece d={P.mirrorFrame} fill={PALETTE.cardboard} material="card" depth={4}>
+            <path d={P.mirrorGlass} fill={DERIVED.mirror} />
+          </Piece>
+          <Piece d={P.pedestal} fill={shade(PALETTE.paper, 0.97)} />
+          <Piece d={P.basin} fill={PALETTE.paper} depth={2} />
+          <Piece d={P.sinkRim} fill={PALETTE.paper} depth={3} />
+          <Piece d={P.tub} fill={PALETTE.paper} depth={5} />
+          <Piece d={P.tubRim} fill={PALETTE.paper} depth={3} />
+        </g>
+      )}
     </g>
   );
 };
 
 // The section plane: walls, ceiling and the floor build-up (tiles, screed, slab, ground).
-export const HouseFront: React.FC = () => {
+export const HouseFront: React.FC<{ assemble?: number }> = ({ assemble = 1 }) => {
   const P = useHouse();
   const { x0, x1, wall, ceilY, ceilT, floorY, part } = HOUSE;
+  const a = (from: number, to: number) => {
+    const p = Math.min(1, Math.max(0, (assemble - from) / (to - from)));
+    return 1 - Math.pow(1 - p, 3);
+  };
   return (
     <g>
-      <Corrugated x={x0} y={ceilY} w={x1 - x0} h={ceilT} seed="ceil" />
-      <Corrugated x={x0} y={ceilY} w={wall} h={HOUSE.slabBottom - ceilY} vertical seed="wall-l" />
-      <Corrugated x={x1 - wall} y={ceilY} w={wall} h={HOUSE.slabBottom - ceilY} vertical seed="wall-r" />
-      <Corrugated x={part.x} y={ceilY + ceilT} w={part.w} h={part.doorTop - ceilY - ceilT} vertical seed="part" />
-      <Piece d={P.lintel} fill={PALETTE.cardboard} material="card" depth={3} />
-
-      <rect x={x0} y={floorY} width={x1 - x0} height={HOUSE.screedTop - floorY} fill={DERIVED.steel} />
-      <g filter="url(#sh-flat)">
-        {P.floorTiles.map((t, i) => (
-          <Piece key={i} d={t.d} fill={t.fill} shadow={null} />
-        ))}
+      <g transform={slide(0, -700, a(0.3, 0.85))}>
+        <Corrugated x={x0} y={ceilY} w={x1 - x0} h={ceilT} seed="ceil" />
       </g>
-      <Piece d={P.screed} fill={PALETTE.kraft} material="kraft" shadow="sh-flat">
-        <path d={P.screed} fill="url(#tex-grain)" opacity={0.6} />
-      </Piece>
-      <Corrugated x={x0} y={HOUSE.slabTop} w={x1 - x0} h={HOUSE.slabBottom - HOUSE.slabTop} seed="slab" />
-      <Piece d={P.ground} fill={shade(PALETTE.cardboard, 0.62)} material="card" />
+      <g transform={slide(-900, 0, a(0.1, 0.6))}>
+        <Corrugated x={x0} y={ceilY} w={wall} h={HOUSE.slabBottom - ceilY} vertical seed="wall-l" />
+      </g>
+      <g transform={slide(600, 0, a(0.2, 0.7))}>
+        <Corrugated x={x1 - wall} y={ceilY} w={wall} h={HOUSE.slabBottom - ceilY} vertical seed="wall-r" />
+      </g>
+      <g transform={slide(0, -500, a(0.25, 0.75))}>
+        <Corrugated x={part.x} y={ceilY + ceilT} w={part.w} h={part.doorTop - ceilY - ceilT} vertical seed="part" />
+        <Piece d={P.lintel} fill={PALETTE.cardboard} material="card" depth={3} />
+      </g>
+
+      <g transform={slide(0, 520, a(0, 0.5))}>
+        <rect x={x0} y={floorY} width={x1 - x0} height={HOUSE.screedTop - floorY} fill={DERIVED.steel} />
+        <g filter="url(#sh-flat)">
+          {P.floorTiles.map((t, i) => (
+            <Piece key={i} d={t.d} fill={t.fill} shadow={null} />
+          ))}
+        </g>
+        <Piece d={P.screed} fill={PALETTE.kraft} material="kraft" shadow="sh-flat">
+          <path d={P.screed} fill="url(#tex-grain)" opacity={0.6} />
+        </Piece>
+        <Corrugated x={x0} y={HOUSE.slabTop} w={x1 - x0} h={HOUSE.slabBottom - HOUSE.slabTop} seed="slab" />
+        <Piece d={P.ground} fill={shade(PALETTE.cardboard, 0.62)} material="card" />
+      </g>
     </g>
   );
 };
 
 // The vibration travelling through the screed, drawn as a teal line. Brightness follows the envelope,
 // so quiet floor stays a faint guide line and a passing wave lights up.
-export const FloorRipple: React.FC<{ t: number; impacts: readonly Impact[]; color?: string }> = ({
+export const FloorRipple: React.FC<{ t: number; impacts: readonly Impact[]; color?: string; guide?: boolean }> = ({
   t,
   impacts,
   color = PALETTE.teal,
+  guide = true,
 }) => {
   const step = 4;
   const chunk = 6;
@@ -229,7 +278,7 @@ export const FloorRipple: React.FC<{ t: number; impacts: readonly Impact[]; colo
     const e = Math.max(...part.map((s) => s.e));
     chunks.push({
       d: part.map((s, j) => `${j === 0 ? "M" : "L"}${s.x} ${s.y.toFixed(2)}`).join(" "),
-      o: 0.2 + 0.8 * Math.min(1, e / 2.2),
+      o: (guide ? 0.2 : 0) + (guide ? 0.8 : 1) * Math.min(1, e / 2.2),
     });
   }
   const marks = impacts.filter((im) => t - im.t >= 0 && t - im.t < 0.4);

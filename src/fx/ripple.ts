@@ -6,7 +6,7 @@ export type Impact = { t: number; x: number; kind: "step" | "fall" };
 // λ is chosen so the wave moves well under half a wavelength per 30 fps frame (no wagon-wheel strobing).
 export const WAVE = {
   step: { A: 7, alpha: 7, beta: 0.0007, v: 600, lambda: 96 },
-  fall: { A: 22, alpha: 1.2, beta: 0.0004, v: 600, lambda: 64 },
+  fall: { A: 22, alpha: 4.5, beta: 0.0004, v: 600, lambda: 64 },
 } as const;
 
 // y(x,t) = Σ A·e^(−β·d)·e^(−α·(τ − d/v))·sin(k·(d − v·τ)),  d = |x − xᵢ|, τ = t − tᵢ, only where d < v·τ.
@@ -22,13 +22,21 @@ export const floorWave = (x: number, t: number, impacts: readonly Impact[]) => {
     const d = Math.abs(x - im.x);
     if (d >= w.v * tau) continue;
     const k = (2 * Math.PI) / w.lambda;
-    y += w.A * Math.exp(-w.beta * d) * Math.exp(-w.alpha * (tau - d / w.v)) * Math.sin(k * (d - w.v * tau));
+    y +=
+      w.A *
+      Math.exp(-w.beta * d) *
+      Math.exp(-w.alpha * (tau - d / w.v)) *
+      Math.sin(k * (d - w.v * tau));
   }
   return y;
 };
 
 // Same sum without the oscillation: how strongly the floor at x is ringing right now.
-export const floorEnvelope = (x: number, t: number, impacts: readonly Impact[]) => {
+export const floorEnvelope = (
+  x: number,
+  t: number,
+  impacts: readonly Impact[],
+) => {
   let e = 0;
   for (const im of impacts) {
     const tau = t - im.t;
@@ -42,5 +50,15 @@ export const floorEnvelope = (x: number, t: number, impacts: readonly Impact[]) 
 };
 
 // A steady walk: one impact per step, advancing `stride` px per step.
-export const walkImpacts = (t0: number, x0: number, period: number, stride: number, count: number): Impact[] =>
-  Array.from({ length: count }, (_, i) => ({ t: t0 + i * period, x: x0 + i * stride, kind: "step" as const }));
+export const walkImpacts = (
+  t0: number,
+  x0: number,
+  period: number,
+  stride: number,
+  count: number,
+): Impact[] =>
+  Array.from({ length: count }, (_, i) => ({
+    t: t0 + i * period,
+    x: x0 + i * stride,
+    kind: "step" as const,
+  }));
