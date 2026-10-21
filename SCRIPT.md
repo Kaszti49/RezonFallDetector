@@ -54,10 +54,10 @@ Format: a pop-up book.
 | ID | Time | Picture | VO / caption |
 |---|---|---|---|
 | S14 | 1:32–1:36 | The book opens; the background is a warm kraft wall. | **VO-12:** „Mi vagyunk a Rezon csapata." |
-| S15 | 1:36–1:40 | Member 1 pops up. Tag: **Kaszti Benedek – design és projektvezetés** | **TEAM-1:** [LINE_1 – coming tomorrow] |
-| S16 | 1:40–1:44 | Member 2. Tag: **Szabó Viktor – programozás és elektronika** | **TEAM-2:** [LINE_2] |
-| S17 | 1:44–1:48 | Member 3. Tag: **[NAME_3] – [ROLE_3]** | **TEAM-3:** [LINE_3] |
-| S18 | 1:48–1:52 | Member 4. Tag: **[NAME_4] – [ROLE_4]** | **TEAM-4:** [LINE_4] |
+| S15 | 1:36–1:40 | Member 1 pops up. Tag: **Kaszti Benedek – design és projektvezetés** | **TEAM-1:** „Én adok neki formát és hangot." |
+| S16 | 1:40–1:44 | Member 2. Tag: **Szabó Viktor – jelfeldolgozás és MI** | **TEAM-2:** „Én tanítom meg érezni a lépéseket." |
+| S17 | 1:44–1:48 | Member 3. Tag: **Veres Bence – beágyazott szoftver** | **TEAM-3:** „Én kötöm össze a családdal." |
+| S18 | 1:48–1:52 | Member 4. Tag: **Bors Máté – elektronika és prototípus** | **TEAM-4:** „Én pedig összerakom, hogy működjön is." |
 | S19 | 1:52–1:56 | **REZON** in cardboard letters pops up behind them, with the device on a small pedestal. Everyone in frame. Hold. | — |
 
 **Team line limit:** max **7 words / 3 seconds** each, or the cap breaks.
@@ -83,7 +83,10 @@ Record WAV, 48 kHz, 24-bit. Do 3 takes per line, with 1 s of silence before and 
 | vo_10.wav | Ha nincs válasz, a Rezon azonnal riasztja a családot. Nem órák múlva – másodpercek alatt. |
 | vo_11.wav | Rezon. A ház, ami meghallja, ha baj van. |
 | vo_12.wav | Mi vagyunk a Rezon csapata. |
-| team_1..4.wav | each member's own line |
+| team_1.wav | Én adok neki formát és hangot. *(Kaszti)* |
+| team_2.wav | Én tanítom meg érezni a lépéseket. *(Viktor)* |
+| team_3.wav | Én kötöm össze a családdal. *(Bence)* |
+| team_4.wav | Én pedig összerakom, hogy működjön is. *(Máté)* |
 
 ## How the video answers the jury's questions
 
@@ -96,4 +99,4 @@ Record WAV, 48 kHz, 24-bit. Do 3 takes per line, with 1 s of silence before and 
 | Team introduced | S14–S19 |
 | Technical depth (selection criterion) | S08 exploded view, S09 tape, S10 detection rule |
 
-**Technical claims for Viktor to OK:** wireless, battery-powered, speaker in the unit, "nem vesz fel hangot" (doesn't record audio), "impact + stillness = fall".
+**Technical claims (approved by Kaszti, 2026-10-21):** wireless, battery-powered, speaker in the unit, "nem vesz fel hangot" (doesn't record audio), "impact + stillness = fall".

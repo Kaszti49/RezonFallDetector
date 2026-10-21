@@ -7,8 +7,8 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 
 | Phase | Status | Approved |
 |---|---|---|
-| 0 Setup | done, awaiting approval | – |
-| 1 Style test (kill test) | – | – |
+| 0 Setup | done | 2026-10-21 |
+| 1 Style test (kill test) | done, awaiting approval | – |
 | 2 Animatic (960×540, silent + captions) | – | – |
 | 3 Full animation | – | – |
 | 4 Audio pass (VO + SFX + master) | – | – |
@@ -18,6 +18,18 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 ## Approvals
 
 - 2026-10-21 – Kaszti: install official Remotion agent skill `remotion-dev/skills`, **project-only** (no global install). Done.
+- 2026-10-21 – Kaszti: Phase 0 approved ("the letters look good").
+- 2026-10-21 – Kaszti: **Remotion license – no problem.** One-off, non-commercial, only the recruiting team sees it. Closed.
+- 2026-10-21 – Kaszti: **Team** (written into SCRIPT.md S15–S18 and the recording list):
+  - Kaszti Benedek – design és projektvezetés – „Én adok neki formát és hangot."
+  - Szabó Viktor – jelfeldolgozás és MI – „Én tanítom meg érezni a lépéseket."
+  - Veres Bence – beágyazott szoftver – „Én kötöm össze a családdal."
+  - Bors Máté – elektronika és prototípus – „Én pedig összerakom, hogy működjön is."
+- 2026-10-21 – Kaszti: **technical claims approved by Kaszti** (Viktor is not involved in the video; SCRIPT.md note updated).
+- 2026-10-21 – Kaszti: caption word-sync = **method (a)** (silence detection + syllable-weighted timing). Switch to (b) whisper only if Kaszti dislikes the sync.
+- 2026-10-21 – Kaszti: **no music, but ambience and SFX are very important to fill the empty space.** → Every scene gets a quiet ambience bed (room tone, tap drip, street/birds outside the window, clock) under the spot effects. Deliberate silences stay "quiet", never digital-dead.
+- 2026-10-21 – Kaszti: will deliver the recorded lines after Phase 2 (today).
+- 2026-10-21 – Kaszti: **text and captions on paper/cardboard backgrounds.** Reference: `out/Font example.png` (ransom-note collage alphabet: each letter on its own cut/torn scrap of cream, kraft, grey or dark-brown paper, slightly rotated, heavy serif letters, own shadow per scrap).
 
 ## Decisions
 
@@ -27,6 +39,23 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 - 2026-10-21 – **Font:** Rubik via `@remotion/google-fonts`, weights 500 (captions) / 700 (tags) / 900 (titles), subsets `latin` + `latin-ext`. latin-ext range U+0100–02BA covers Ő/ő/Ű/ű (U+0150/0151/0170/0171).
 - 2026-10-21 – **Glyph test:** `out/phase0/font_test.png`. Fallback font deliberately set to Courier New so any missing glyph would show as typewriter type – none did. Ő ű render with the double acute at 44 px (caption) and 116 px (cardboard title). PASS.
 - 2026-10-21 – **Timing estimates before real VO:** Hungarian syllables = vowels, so VO length is estimated from the exact script text (calm 4.6 syl/s). Phase 2 animatic uses these; Phase 4 replaces them with measured durations.
+
+## Phase 1 – style test (2026-10-21)
+
+Stills: `out/phase1/StyleBathroom.png`, `StyleDevice.png`, `StyleSection.png`, `StyleTitles.png`; overview `out/phase1/PHASE1_contact_sheet.png`. Each still renders in ~7 s.
+
+**What makes it read as paper (all code, no images):** seeded hand-cut outlines on every piece; seamless fiber/grain textures that move with each piece; low-frequency mottling on backdrops; card thickness extruded bottom-right; a lit top-left cut edge; per-piece drop shadow (6, 8, blur 10, 35 % ink); corrugated flutes on every cut face; brass split pins on Mari's joints; far-side limbs in shade; one warm key light top-left with falloff; shallow depth of field in the close-up.
+
+**Iterations:** v1 → wall fibers read as wood grain, floor read as planks, Mari blended into the tiles, flat light. v2 → mottle read as stains. v3/final → fixed (short fibers, checkerboard tile floor, plum cardigan, rim light, stronger window shaft, subtle mottle, bigger LED, contact shadow, distinct step bursts).
+
+**Decisions made (Kaszti to confirm):**
+- **Derived colors:** characters/props use blends of palette tokens only (`DERIVED` in `src/theme.ts`). The palette has no purple, so Mari's "lilac" cardigan is a plum-mauve blend of night-blue + red + paper. A true lilac would be a new color – Kaszti's call.
+- **LED "green" = teal** (`ledTeal`), since teal is the palette's "all OK" color and green is not in the palette.
+- **Ripple model:** same formula, decay split into distance attenuation β and ring-down α (`src/fx/ripple.ts`). With β = α/v it equals the brief's formula exactly. Reason: with the brief's α = 2.5, a step's wave fades to ~0.1 px before reaching the device, so the picture could not show the signal arriving. Step: A 7 px, α 7, β 0.0007/px, v 600 px/s, λ 96 px. Fall: A 22 px, α 1.2, β 0.0004/px, λ 64 px. λ is large enough that the wave moves < ½ wavelength per frame (no strobing).
+- **Every text sits on paper or card** (Kaszti): captions = torn paper strip on a kraft backing scrap; tags = cut paper with tape; titles = letters on individual cut scraps (reference: `out/Font example.png`).
+- **Title typeface: open** – A Rubik Black / B Fraunces Black serif / C ransom mix.
+
+**Honest kill-test verdict:** it does not look cheap. It reads as a coherent hand-made paper-craft world, and the cross-section + tape sell the technical idea clearly. It is "illustrated cut paper" rather than "photographed stop-motion": light is still fairly even and there is no photographic micro-texture. Motion (boil + poses on twos) will add much of the handmade feel. Fallback, if Kaszti wants more realism: photo-like generated textures (no text in them) mapped onto the same shapes – costs time and consistency; recommendation is to stay procedural.
 
 ## Phase 0 findings
 
@@ -67,12 +96,9 @@ All lines fit. **VO-03 is tight** (≈6.6 s in a 7 s slot) → read at a normal 
 
 ## Open questions for Kaszti
 
-1. Remotion license grey area: OK to proceed as an individual (recommended), or email Remotion first?
-2. Team: names/roles for members 3–4 and all four lines (`[ ]` placeholders stay visible until filled).
-3. Viktor to OK the technical claims (SCRIPT.md, bottom).
-4. VO recording date. **Recommendation:** record a quick phone scratch take of all lines early, so the timing locks before Phase 3, then the clean take for Phase 4.
-5. S13 "soft relief beat (no music)": plan = non-musical SFX only (door, a soft exhale/paper settle). No tonal sting, to stay clear of the "no background music" rule.
-6. Phase 4 word-sync method for captions: (a) silence detection + syllable-weighted timing, no installs (default), or (b) whisper.cpp word timestamps (needs an install plus a ~1.5 GB model; ask first).
+1. ~~License~~ closed. ~~Team names/roles/lines~~ closed. ~~Tech claims~~ closed. ~~Word-sync~~ closed: (a).
+2. S13 "soft relief beat (no music)": plan = non-musical SFX only (door, a soft exhale/paper settle). No tonal sting, to stay clear of the "no background music" rule.
+3. Title typeface (decided from the Phase 1 still): Rubik Black on collage scraps vs a heavy serif like the reference.
 
 ## Risks and mitigations
 

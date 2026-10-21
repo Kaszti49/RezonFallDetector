@@ -12,13 +12,36 @@ export const PaperStrip: React.FC<{
   tear?: number;
   style?: React.CSSProperties;
   children?: React.ReactNode;
-}> = ({ width, height, seed, color = PALETTE.paper, tear = 5, style, children }) => {
-  const d = useMemo(() => tornRectPath(width, height, seed, { tear }), [width, height, seed, tear]);
+}> = ({
+  width,
+  height,
+  seed,
+  color = PALETTE.paper,
+  tear = 5,
+  style,
+  children,
+}) => {
+  const d = useMemo(
+    () => tornRectPath(width, height, seed, { tear }),
+    [width, height, seed, tear],
+  );
   const clipId = `strip-clip-${seed}`;
 
   return (
-    <div style={{ position: "relative", width, height, filter: LAYER_SHADOW, ...style }}>
-      <svg width={width} height={height} style={{ position: "absolute", inset: 0 }}>
+    <div
+      style={{
+        position: "relative",
+        width,
+        height,
+        filter: LAYER_SHADOW,
+        ...style,
+      }}
+    >
+      <svg
+        width={width}
+        height={height}
+        style={{ position: "absolute", inset: 0 }}
+      >
         <defs>
           <clipPath id={clipId}>
             <path d={d} />
@@ -26,7 +49,13 @@ export const PaperStrip: React.FC<{
         </defs>
         <path d={d} fill={color} />
         <g clipPath={`url(#${clipId})`}>
-          <GrainLayer id={`strip-grain-${seed}`} width={width} height={height} seed={seed} opacity={0.16} />
+          <GrainLayer
+            id={`strip-grain-${seed}`}
+            width={width}
+            height={height}
+            seed={seed}
+            opacity={0.16}
+          />
         </g>
       </svg>
       <div

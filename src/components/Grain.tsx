@@ -9,27 +9,54 @@ export const GrainLayer: React.FC<{
   seed?: number;
   opacity?: number;
   frequency?: string;
-}> = ({ id, width, height, seed = 3, opacity = 0.22, frequency = "0.85 0.38" }) => {
+}> = ({
+  id,
+  width,
+  height,
+  seed = 3,
+  opacity = 0.22,
+  frequency = "0.85 0.38",
+}) => {
   return (
     <>
       <defs>
         <filter id={`${id}-dark`} x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency={frequency} numOctaves={3} seed={seed} />
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency={frequency}
+            numOctaves={3}
+            seed={seed}
+          />
           <feColorMatrix
             type="matrix"
             values={`0 0 0 0 ${hexChannel(PALETTE.ink, 0)}  0 0 0 0 ${hexChannel(PALETTE.ink, 1)}  0 0 0 0 ${hexChannel(PALETTE.ink, 2)}  2.4 0 0 0 -1.15`}
           />
         </filter>
         <filter id={`${id}-light`} x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency={frequency} numOctaves={3} seed={seed + 17} />
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency={frequency}
+            numOctaves={3}
+            seed={seed + 17}
+          />
           <feColorMatrix
             type="matrix"
             values={`0 0 0 0 ${hexChannel(PALETTE.paper, 0)}  0 0 0 0 ${hexChannel(PALETTE.paper, 1)}  0 0 0 0 ${hexChannel(PALETTE.paper, 2)}  -2.4 0 0 0 1.15`}
           />
         </filter>
       </defs>
-      <rect width={width} height={height} filter={`url(#${id}-dark)`} opacity={opacity} />
-      <rect width={width} height={height} filter={`url(#${id}-light)`} opacity={opacity * 0.8} />
+      <rect
+        width={width}
+        height={height}
+        filter={`url(#${id}-dark)`}
+        opacity={opacity}
+      />
+      <rect
+        width={width}
+        height={height}
+        filter={`url(#${id}-light)`}
+        opacity={opacity * 0.8}
+      />
     </>
   );
 };

@@ -21,17 +21,32 @@ const line = (size: number, weight: number): React.CSSProperties => ({
 export const FontTest: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: PALETTE.kraft }}>
-      <GrainOverlay id="bg" width={VIDEO.width} height={VIDEO.height} seed={11} opacity={0.3} />
+      <GrainOverlay
+        id="bg"
+        width={VIDEO.width}
+        height={VIDEO.height}
+        seed={11}
+        opacity={0.3}
+      />
 
       <div style={{ position: "absolute", left: SAFE.x, top: SAFE.y }}>
         <PaperStrip width={1060} height={62} seed={4} tear={3}>
           <span style={{ ...line(24, WEIGHT.tag), letterSpacing: 1 }}>
-            FONT TEST · Rubik 500 / 700 / 900 · latin + latin-ext · fallback: Courier New
+            FONT TEST · Rubik 500 / 700 / 900 · latin + latin-ext · fallback:
+            Courier New
           </span>
         </PaperStrip>
       </div>
 
-      <div style={{ position: "absolute", top: 190, width: "100%", display: "flex", justifyContent: "center" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 190,
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
         <CardboardText text={TEST} size={116} />
       </div>
 
@@ -47,8 +62,12 @@ export const FontTest: React.FC = () => {
       >
         <div style={line(64, WEIGHT.caption)}>Árvíztűrő tükörfúrógép</div>
         <div style={line(64, WEIGHT.title)}>ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP</div>
-        <div style={line(52, WEIGHT.caption)}>„Mi történik, ha senki sem hallja?”</div>
-        <div style={{ ...line(120, WEIGHT.caption), letterSpacing: 24 }}>ő ö ű ü Ő Ö Ű Ü</div>
+        <div style={line(52, WEIGHT.caption)}>
+          „Mi történik, ha senki sem hallja?”
+        </div>
+        <div style={{ ...line(120, WEIGHT.caption), letterSpacing: 24 }}>
+          ő ö ű ü Ő Ö Ű Ü
+        </div>
       </div>
 
       <div
@@ -62,7 +81,8 @@ export const FontTest: React.FC = () => {
       >
         <PaperStrip width={720} height={96} seed={21}>
           <span style={line(44, WEIGHT.caption)}>
-            Ő ű – <span style={{ color: PALETTE.teal }}>Kétezer-harmincegy</span>
+            Ő ű –{" "}
+            <span style={{ color: PALETTE.teal }}>Kétezer-harmincegy</span>
           </span>
         </PaperStrip>
       </div>

@@ -3,7 +3,9 @@ import { mulberry32 } from "./random";
 type Pt = readonly [number, number];
 
 const toPath = (pts: Pt[]) =>
-  pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`).join(" ") + " Z";
+  pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`)
+    .join(" ") + " Z";
 
 // Walks one edge from a to b, offsetting each vertex along the edge normal by seeded noise.
 const jaggedEdge = (
@@ -34,7 +36,11 @@ export const tornRectPath = (
   w: number,
   h: number,
   seed: number,
-  { tear = 5, cut = 1.5, step = 11 }: { tear?: number; cut?: number; step?: number } = {},
+  {
+    tear = 5,
+    cut = 1.5,
+    step = 11,
+  }: { tear?: number; cut?: number; step?: number } = {},
 ) => {
   const r = mulberry32(seed);
   const pad = tear;

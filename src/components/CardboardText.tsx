@@ -25,7 +25,9 @@ export const CardboardText: React.FC<{
   return (
     <div style={{ position: "relative", filter: LAYER_SHADOW, ...style }}>
       {/* Invisible copy reserves the layout box. */}
-      <div style={{ ...base, position: "relative", visibility: "hidden" }}>{text}</div>
+      <div style={{ ...base, position: "relative", visibility: "hidden" }}>
+        {text}
+      </div>
       {Array.from({ length: depth }, (_, i) => depth - i).map((d) => (
         <div
           key={d}
