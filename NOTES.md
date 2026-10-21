@@ -10,7 +10,7 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 | 0 Setup | done | 2026-10-21 |
 | 1 Style test (kill test) | done | 2026-10-21 |
 | 2 Animatic (960×540, silent + captions) | done | 2026-10-21 |
-| 3 Full animation (+ SFX pulled forward) | in progress | – |
+| 3 Full animation (+ SFX pulled forward) | done – tweaks pending (captions, some SFX) | 2026-10-21 |
 | 4 Audio pass (VO + SFX + master) | – | – |
 | 5 Team pass (heads, lines, mouth flaps) | – | – |
 | 6 Final render + QC | – | – |
