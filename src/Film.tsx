@@ -1,4 +1,5 @@
 import { AbsoluteFill, Sequence } from "remotion";
+import { SfxTrack } from "./audio/SfxTrack";
 import { CaptionTrack } from "./components/CaptionTrack";
 import { Enter } from "./components/Enter";
 import { MaterialDefs } from "./components/material/MaterialDefs";
@@ -28,5 +29,6 @@ export const Film: React.FC = () => (
       );
     })}
     <CaptionTrack />
+    <SfxTrack />
   </AbsoluteFill>
 );

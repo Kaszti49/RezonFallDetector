@@ -67,7 +67,7 @@ You are producing a **≤2:00 cardboard cut-out animated film** for the HARMAN H
   - Max 2 lines, ≤ 38 characters per line.
   - Revealed word by word in sync with the voiceover.
   - Key word highlighted: teal in product scenes, red in problem scenes.
-- Titles and stamps ("2031", "REZON"): Rubik Black, built as cardboard letters with thickness and a shadow.
+- Titles and stamps ("2028", "REZON"): Rubik Black, built as cardboard letters with thickness and a shadow.
 - Safe area: 5% margin on all sides.
 
 **Characters and props (built procedurally in SVG as jointed puppets)**

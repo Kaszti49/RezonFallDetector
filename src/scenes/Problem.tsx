@@ -121,7 +121,7 @@ export const S05: React.FC = () => {
 };
 
 // ---- S06: rewind. The story runs backwards, fast and jerky, and stops on the empty bathroom. ----
-const REWIND_END = 3.0;
+export const REWIND_END = 3.0;
 
 export const S06: React.FC = () => {
   const frame = useCurrentFrame();

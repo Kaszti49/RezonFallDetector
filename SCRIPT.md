@@ -35,7 +35,7 @@ Language: Hungarian. Target length **1:56** (hard cap 1:58; the rules allow max 
 | ID | Time | Picture | Sound | VO / caption |
 |---|---|---|---|---|
 | S06 | 0:29–0:33 | **Rewind:** a cardboard cassette-reel icon spins in the corner, and S05→S02 plays backwards fast, stepped and jerky. It stops on the empty morning bathroom. | tape rewind, then a click | **VO-05:** „Tekerjük vissza!" |
-| S07 | 0:33–0:40 | The camera peels off the wall like a sticker and falls out of frame. The view pulls back and the bathroom becomes a **cross-section of the whole house** with the floor layers visible. A big cardboard caption stamps in: **2031**. | peel, stamp | **VO-06:** „Kétezer-harmincegy. Mi lenne, ha nem egy kamera figyelne, hanem maga a ház?" |
+| S07 | 0:33–0:40 | The camera peels off the wall like a sticker and falls out of frame. The view pulls back and the bathroom becomes a **cross-section of the whole house** with the floor layers visible. A big cardboard caption stamps in: **2028**. | peel, stamp | **VO-06:** „Kétezer-huszonnyolc. Mi lenne, ha nem egy kamera figyelne, hanem maga a ház?" |
 | S08 | 0:40–0:52 | **The Rezon device slides in** and lands on the floor by the bathroom wall. Push in, then an **exploded view**: the layers lift apart, with Hungarian labels on paper tags: **geofon · ESP32 · akkumulátor · hangszóró**, plus a small Wi-Fi icon for **„vezeték nélküli"**. Then it reassembles with a snap. | cardboard slide, snap | **VO-07:** „Ez a Rezon. Egy vezeték nélküli kis doboz, ami a padlón keresztül érzékeli a rezgéseket." |
 | S09 | 0:52–1:03 | Mari walks across the cross-section. **Each step sends teal ripples** through the floor to the Rezon, and its LED pulses green. A **seismograph paper tape** at the bottom draws the same rhythm, labelled **„lépés-mintázat"**. | footsteps, paper tape scratch | **VO-08:** „Nem lát, nem vesz fel hangot, és nem kell hordani. Minden lépésnek saját rezgése van – a Rezon megtanulja, hogyan jár Mari néni." |
 | S10 | 1:03–1:07 | Same slip as S04. **One big red ripple**, the tape spikes, then a **flat line**. A caption tag appears: **„ütés + mozdulatlanság = esés"**. | thud, then silence | — |
@@ -75,7 +75,7 @@ Record WAV, 48 kHz, 24-bit. Do 3 takes per line, with 1 s of silence before and 
 | vo_03.wav | A lánya kamerát szereltetett a fürdőszobába. De ki akarna kamera előtt fürdeni? |
 | vo_04.wav | A kamera ott volt. Csak éppen semmit sem látott. Mari néni órákig feküdt a hideg csempén. |
 | vo_05.wav | Tekerjük vissza! |
-| vo_06.wav | Kétezer-harmincegy. Mi lenne, ha nem egy kamera figyelne, hanem maga a ház? |
+| vo_06.wav | Kétezer-huszonnyolc. Mi lenne, ha nem egy kamera figyelne, hanem maga a ház? |
 | vo_07.wav | Ez a Rezon. Egy vezeték nélküli kis doboz, ami a padlón keresztül érzékeli a rezgéseket. |
 | vo_08.wav | Nem lát, nem vesz fel hangot, és nem kell hordani. Minden lépésnek saját rezgése van – a Rezon megtanulja, hogyan jár Mari néni. |
 | dev_01.wav | Mari néni, jól van? *(calm, clear, a little slower)* |

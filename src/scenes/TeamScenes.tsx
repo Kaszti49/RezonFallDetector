@@ -53,8 +53,8 @@ const TeamStage: React.FC<{ offset: number }> = ({ offset }) => {
         <Book open={ramp(tt, 0.05, 0.9)} />
         {finale > 0 ? (
           <g transform={`translate(${CENTER} ${BASE_Y}) scale(1 ${device.toFixed(3)}) translate(${-CENTER} ${-BASE_Y})`}>
-            <Pedestal x={CENTER} y={BASE_Y} w={250} h={110} />
-            <RezonHero cx={CENTER} cy={BASE_Y - 126 - 40 - 52} rx={105} k={0.5} h={40} seed="finale" led={LED.ok(1)} />
+            <Pedestal x={CENTER} y={BASE_Y} w={300} h={110} />
+            <RezonHero cx={CENTER} cy={BASE_Y - 126 - 48 - 65} rx={130} k={0.5} h={48} seed="finale" led={LED.ok(1)} />
           </g>
         ) : null}
         {LINES.map((line, i) => {

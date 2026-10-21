@@ -100,7 +100,7 @@ const ScrapTile: React.FC<{
   </div>
 );
 
-// Ransom-note title: every letter on its own cut scrap (for short stamps like "2031", "REZON").
+// Ransom-note title: every letter on its own cut scrap (for short stamps like "2028", "REZON").
 export const CollageLetters: React.FC<{
   text: string;
   size: number;

@@ -61,6 +61,7 @@ export const RezonHero: React.FC<{
   inside,
 }) => {
   const ry = rx * k;
+  const sc = rx / 300; // lid details are designed at rx = 300 and scale with the device
   const lidT = 16;
   const rl = rx + 5;
   const ryl = rl * k;
@@ -77,9 +78,9 @@ export const RezonHero: React.FC<{
     const holes: Pt[] = [];
     for (let row = -5; row <= 5; row++) {
       for (let col = -6; col <= 6; col++) {
-        const u = col * 25 + (row % 2 ? 12.5 : 0);
-        const v = row * 21.6;
-        if (u * u + v * v < 104 * 104) holes.push([cx + u, top + (v - 98) * k]);
+        const u = (col * 25 + (row % 2 ? 12.5 : 0)) * (rx / 300);
+        const v = row * 21.6 * (rx / 300);
+        if (u * u + v * v < (104 * rx / 300) ** 2) holes.push([cx + u, top + (v - (98 * rx) / 300) * k]);
       }
     }
     return {
@@ -112,7 +113,7 @@ export const RezonHero: React.FC<{
     };
   }, [cx, cy, rx, k, h, seed, rl, ryl, top, ry]);
 
-  const ledAt: Pt = [cx, top + 196 * k];
+  const ledAt: Pt = [cx, top + 196 * k * sc];
 
   return (
     <g>
@@ -198,7 +199,7 @@ export const RezonHero: React.FC<{
       {inside ? <g clipPath={`url(#${seed}-inside)`}>{inside}</g> : null}
       <g
         transform={`translate(0 ${-lidLift})`}
-        filter={lidLift > 0 ? "url(#sh)" : undefined}
+        filter={lidLift > 0 ? "url(#sh)" : "url(#sh-flat)"}
       >
         <Piece
           d={g.lidSide}
@@ -216,21 +217,22 @@ export const RezonHero: React.FC<{
         </Piece>
         <Piece d={g.lidTop} fill={PALETTE.kraft} material="kraft" shadow={null}>
           <path d={g.lidTop} fill={`url(#${seed}-lid)`} />
+          <path d={g.lidTop} fill="none" stroke={shade(PALETTE.kraft, 0.6)} strokeWidth={Math.max(1.5, rx / 110)} />
           {g.holes.map(([x, y], i) => (
             <g key={i}>
               <ellipse
-                cx={x + 1.4}
-                cy={y + 0.9}
-                rx={6.5}
-                ry={6.5 * k}
+                cx={x + 1.4 * sc}
+                cy={y + 0.9 * sc}
+                rx={6.5 * sc}
+                ry={6.5 * k * sc}
                 fill={PALETTE.paper}
                 opacity={0.35}
               />
               <ellipse
                 cx={x}
                 cy={y}
-                rx={6.5}
-                ry={6.5 * k}
+                rx={6.5 * sc}
+                ry={6.5 * k * sc}
                 fill={PALETTE.ink}
                 opacity={0.82}
               />
@@ -238,18 +240,18 @@ export const RezonHero: React.FC<{
           ))}
           {/* Debossed: dark rim top-left, lit rim bottom-right, slightly darker floor. */}
           <g
-            transform={`translate(${cx} ${top + 92 * k}) scale(1 ${k})`}
+            transform={`translate(${cx} ${top + 92 * k * sc}) scale(1 ${k})`}
             fontFamily={RUBIK}
             fontWeight={900}
-            fontSize={92}
-            letterSpacing={12}
+            fontSize={92 * sc}
+            letterSpacing={12 * sc}
             textAnchor="middle"
             dominantBaseline="central"
           >
-            <text x={-2.5} y={-2.5} fill={PALETTE.ink} opacity={0.5}>
+            <text x={-2.5 * sc} y={-2.5 * sc} fill={PALETTE.ink} opacity={0.5}>
               REZON
             </text>
-            <text x={2.5} y={2.5} fill={PALETTE.paper} opacity={0.45}>
+            <text x={2.5 * sc} y={2.5 * sc} fill={PALETTE.paper} opacity={0.45}>
               REZON
             </text>
             <text fill={shade(PALETTE.kraft, 0.88)}>REZON</text>
@@ -260,22 +262,22 @@ export const RezonHero: React.FC<{
           id={`${seed}-glow`}
           x={ledAt[0]}
           y={ledAt[1]}
-          r={110}
+          r={110 * sc}
           led={led}
         />
         <ellipse
           cx={ledAt[0]}
-          cy={ledAt[1] + 3}
-          rx={24}
-          ry={14}
+          cy={ledAt[1] + 3 * sc}
+          rx={24 * sc}
+          ry={14 * sc}
           fill={shade(PALETTE.kraft, 0.55)}
         />
-        <ellipse cx={ledAt[0]} cy={ledAt[1]} rx={21} ry={12} fill={led.color} />
+        <ellipse cx={ledAt[0]} cy={ledAt[1]} rx={21 * sc} ry={12 * sc} fill={led.color} />
         <ellipse
-          cx={ledAt[0] - 6}
-          cy={ledAt[1] - 4}
-          rx={7}
-          ry={3.4}
+          cx={ledAt[0] - 6 * sc}
+          cy={ledAt[1] - 4 * sc}
+          rx={7 * sc}
+          ry={3.4 * sc}
           fill={PALETTE.paper}
           opacity={0.85}
         />

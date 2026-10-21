@@ -26,7 +26,7 @@ export const STORY_STEPS: Impact[] = [...walkImpacts(WALK_IN), ...walkImpacts(WA
 
 // The towel lands on the last word of VO-03 ("… fürdeni?"): the joke's punchline.
 const LAND = T03 + wordAt("S03", "vo_03", 11) + 0.6;
-const THROW = { wind: LAND - 0.95, release: LAND - 0.55, land: LAND };
+export const THROW = { wind: LAND - 0.95, release: LAND - 0.55, land: LAND };
 
 // The slip: feet go, she tilts back, and hits the floor (the same thud as S01).
 const SLIP = T04 + 0.25;

@@ -33,7 +33,8 @@
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
     "check": "node scripts/check-script.mjs && tsc",
-    "render:animatic": "npm run check && remotion render REZON out/phase2/REZON_animatic.mp4 --scale=0.5"
+    "render:animatic": "npm run check && remotion render REZON out/phase2/REZON_animatic.mp4 --scale=0.5",
+    "sfx": "node scripts/build-sfx.mjs"
   },
   "allowScripts": {
     "esbuild": false

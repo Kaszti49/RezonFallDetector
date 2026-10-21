@@ -56,6 +56,16 @@ import { useMemo } from "react";
 
 // ---- The house world (S07–S13) ----
 
+// Picture beats in scene seconds. The sound track reads the same table, so every sound
+// lands on the frame its picture event happens.
+export const BEATS = {
+  s08: { land: 0.75, cut: 2.75, lift: 3.2, snap: 9.75 },
+  s10: { rule: 2.0 },
+  s11: { chime: 0.3, countFrom: 1.0, countTo: 6.8 },
+  s12: { stand: 4.2, keys: 4.7 },
+  s13: { smile: 2.5 },
+} as const;
+
 const X_DEV = 1490; // Rezon on the bathroom floor, between sink and tub
 const MARI_SCALE = 0.42; // matches the bathroom set's scale inside the house
 const FLOOR = HOUSE.floorY;
@@ -79,6 +89,8 @@ const MARI_DOWN_X = SEC_X - 40 * MARI_SCALE;
 const STEPS = walkImpacts(SEC_WALK);
 const FALL: Impact = { t: SEC_HIT, x: MARI_DOWN_X - 20, kind: "fall" };
 const EVENTS: Impact[] = [...STEPS, FALL];
+// Section events for the sound track (σ = seconds from the start of S09).
+export const SECTION = { steps: STEPS, slip: SEC_SLIP, hit: SEC_HIT } as const;
 
 type Puppet = { pose: Pose; place: Placement; tilt: number };
 
@@ -199,7 +211,7 @@ const deviceGlow = (t: number, impacts: readonly Impact[]) =>
   Math.min(1, 0.25 + floorEnvelope(X_DEV, t, impacts) / 2);
 const clockAt = (sigma: number) => 8 + (10 + sigma * 0.12) / 60;
 
-// ---- S07: 2031. The camera peels off; the bathroom becomes a cross-section of the whole house. ----
+// ---- S07: 2028. The camera peels off; the bathroom becomes a cross-section of the whole house. ----
 export const S07: React.FC = () => {
   const frame = useCurrentFrame();
   const t = frame / FPS;
@@ -230,7 +242,7 @@ export const S07: React.FC = () => {
               text={ON.year}
               size={170}
               style="ransom"
-              seed="stamp-2031"
+              seed="stamp-year"
             />
           </AbsoluteFill>
         ) : null
@@ -249,7 +261,7 @@ export const S07: React.FC = () => {
 
 // ---- S08: the device lands, push in, exploded view with labels, snap back together. ----
 const HERO = { cx: 960, cy: 690, rx: 220, k: 0.5, h: 80 };
-const CUT_TO_HERO = 2.75;
+const CUT_TO_HERO = BEATS.s08.cut;
 
 const heroBackdrop = {
   wall: Array.from({ length: 3 }, (_, row) =>
@@ -306,11 +318,11 @@ export const S08: React.FC = () => {
   if (t < CUT_TO_HERO) {
     const y = keys(tw, [
       [0.2, -260],
-      [0.75, FLOOR],
+      [BEATS.s08.land, FLOOR],
       [0.83, FLOOR - 16],
       [0.92, FLOOR],
     ]);
-    const landing: Impact[] = [{ t: 0.75, x: X_DEV, kind: "step" }];
+    const landing: Impact[] = [{ t: BEATS.s08.land, x: X_DEV, kind: "step" }];
     const cam = blendCamera(
       WIDE,
       clampCamera({ cx: X_DEV, cy: 560, zoom: 3.4 }),
@@ -332,10 +344,10 @@ export const S08: React.FC = () => {
 
   // Exploded view: lift, hold while the labels pop on their words, snap back together.
   const e = keys(tw, [
-    [3.2, 0],
+    [BEATS.s08.lift, 0],
     [4.2, 1],
     [9.4, 1],
-    [9.75, -0.04],
+    [BEATS.s08.snap, -0.04],
     [9.85, 0],
   ]);
   const L = levels(HERO.cy, Math.max(0, e));
@@ -473,7 +485,7 @@ export const S10: React.FC = () => {
     sx: sh.x,
     sy: sh.y,
   };
-  const rule = snap(ramp(t, 2.0, 2.3));
+  const rule = snap(ramp(t, BEATS.s10.rule, BEATS.s10.rule + 0.3));
   return (
     <Frame
       overlay={
@@ -583,7 +595,7 @@ export const S11: React.FC = () => {
           clockHours={clockAt(sigma)}
           extra={
             <>
-              {t > 0.3 ? (
+              {t > BEATS.s11.chime ? (
                 <Rings
                   t={t}
                   x={X_DEV + 20}
@@ -595,7 +607,7 @@ export const S11: React.FC = () => {
                 cx={X_DEV}
                 cy={FLOOR - 18}
                 r={78}
-                progress={ramp(t, 1.0, 6.8, 0, 1, (v) => v)}
+                progress={ramp(t, BEATS.s11.countFrom, BEATS.s11.countTo, 0, 1, (v) => v)}
               />
             </>
           }
@@ -645,7 +657,7 @@ export const S12: React.FC = () => {
     );
   }
 
-  const standUp = ramp(tw, 4.2, 4.9);
+  const standUp = ramp(tw, BEATS.s12.stand, BEATS.s12.stand + 0.7);
   const annaPose =
     tw < tLit + 0.2
       ? ANNA.sit
@@ -656,7 +668,7 @@ export const S12: React.FC = () => {
     [4.2, RIGHT_FLOOR - 104],
     [4.9, RIGHT_FLOOR - 180],
   ]);
-  const hasKeys = tw > 4.7;
+  const hasKeys = tw > BEATS.s12.keys;
 
   return (
     <Frame light={0.85}>
@@ -742,7 +754,7 @@ export const S13: React.FC = () => {
   const mariPose =
     tw < 2.4
       ? lerpPose(MARI.lie, MARI.sitFloor, up)
-      : lerpPose(MARI.sitFloor, MARI.sitSmile, ramp(tw, 2.5, 3.0));
+      : lerpPose(MARI.sitFloor, MARI.sitSmile, ramp(tw, BEATS.s13.smile, BEATS.s13.smile + 0.5));
   const mari: Puppet = {
     pose: mariPose,
     place: { mode: "hip", x: MARI_DOWN_X, y: FLOOR - (50 - 16 * up) * s },

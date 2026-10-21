@@ -9,8 +9,8 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 |---|---|---|
 | 0 Setup | done | 2026-10-21 |
 | 1 Style test (kill test) | done | 2026-10-21 |
-| 2 Animatic (960×540, silent + captions) | done, awaiting approval | – |
-| 3 Full animation | – | – |
+| 2 Animatic (960×540, silent + captions) | done | 2026-10-21 |
+| 3 Full animation (+ SFX pulled forward) | in progress | – |
 | 4 Audio pass (VO + SFX + master) | – | – |
 | 5 Team pass (heads, lines, mouth flaps) | – | – |
 | 6 Final render + QC | – | – |
@@ -29,6 +29,10 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 - 2026-10-21 – Kaszti: caption word-sync = **method (a)** (silence detection + syllable-weighted timing). Switch to (b) whisper only if Kaszti dislikes the sync.
 - 2026-10-21 – Kaszti: **no music, but ambience and SFX are very important to fill the empty space.** → Every scene gets a quiet ambience bed (room tone, tap drip, street/birds outside the window, clock) under the spot effects. Deliberate silences stay "quiet", never digital-dead.
 - 2026-10-21 – Kaszti: will deliver the recorded lines after Phase 2 (today).
+- 2026-10-21 – Kaszti: **Phase 2 approved** ("really good, I'm impressed").
+- 2026-10-21 – Kaszti: **year 2031 → 2028.** VO-06 now reads „Kétezer-huszonnyolc. Mi lenne, ha nem egy kamera figyelne, hanem maga a ház?" Updated SCRIPT.md (S07 + recording list), captions.json, stamp, CLAUDE.md style example. 2028 is within the call's "next 5 years"; same 6 syllables, so timing is unchanged.
+- 2026-10-21 – Kaszti asked for a standing phone (9:16) format. **Official call re-checked: "16:9 képaránnyal"** ("készülhet okostelefonnal" only means it may be shot on a phone). Kaszti chose: **keep 16:9.**
+- 2026-10-21 – Kaszti: **sound effects + ambience pulled forward into Phase 3** (they don't depend on the VO). Phase 4 then adds the VO, ducking and the master.
 - 2026-10-21 – Kaszti: **Phase 1 approved** – procedural cardboard look passes the kill test (no texture fallback).
 - 2026-10-21 – Kaszti: **title style C – ransom mix** (letters on cut scraps, one display face per letter).
 - 2026-10-21 – Kaszti: **Mari's cardigan stays the palette blend (plum-mauve)**; no new color.
@@ -68,6 +72,16 @@ Output: `out/phase2/REZON_animatic.mp4` (960×540, silent, captions on). Composi
 - Team heads are placeholders (Phase 5).
 - Walk has slight foot sliding; S01 dust/thud could be stronger; per-scene light grading (warm morning → blue night → calm teal) to refine.
 - S07 is tight: the house finishes assembling just before the cut; real VO timing will decide.
+
+## Sound design (2026-10-21)
+
+- **Sources:** Kenney CC0 packs (impact, RPG foley, interface) + sounds synthesized with ffmpeg. All logged in `audio/sfx/CREDITS.md`. No attribution needed, no accounts, no music. Freesound (account needed) and Mixkit (license unverifiable) not used.
+- **Build:** `npm run sfx` → `scripts/build-sfx.mjs` → `public/sfx/*.wav` (48 kHz, peak-normalized per sound; cardboard flavor = low-passed sources, thuds get a synthesized low sweep for body).
+- **Sync:** `src/audio/SfxTrack.tsx` places every sound from the same constants as the picture (walk plans → footsteps, fall times → thuds, `BEATS` table, VO word times → label pops / tagline pops). Verified on the rendered audio: thuds at 0.6 s / 18.85 s / 63.9 s, stamp 33.4 s, landing 40.75 s, snap 49.75 s, rewind click 32.0 s.
+- **Brief rules met:** S01 hook thud and S04 fall thud are the **same file** (`thud.wav`); S10 is the heavier variant (`thud_heavy.wav`); chime = two sine tones E5 → A5 with exponential decay; room tone under everything (never digital silence).
+- **Cue map:** S01 thud · S02 flap, slippers, drips, clock · S03 towel whoosh/flop · S04 slipper squeak + thud · S05 fast clock, crickets as night falls · S06 tape rewind + click · S07 stamp, sticker peel, camera clatter off-screen, paper slides as the house assembles · S08 landing, lid lift, label pops on their words, snap · S09–S10 slippers through the floor, pen on the tape, squeak, heavy thud, tag pop · S11 chime + countdown ticks · S12 slide, phone buzz on "riasztja", chair creak, keys · S13 page flip, door off-screen, soft settle, tagline pops · S14–S19 page flip, book open, pop-ups, slides.
+- **Level now:** SFX-only preview = −18 LUFS integrated, true peak −0.9 dBFS (audible without VO). **Phase 4:** SFX bus down ~6–8 dB + ducking under VO, master to −16 LUFS / ≤ −1 dBTP measured on the final mp4.
+- **Audition (Kaszti picks):** `audio/sfx/audition/` – thud A/B/C, steps A/B, chime A/B/C, phone buzz A/B. A = what the preview uses.
 
 ## Recording guide (for the lines Kaszti delivers after Phase 2)
 
