@@ -29,6 +29,7 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 - 2026-10-21 – Kaszti: caption word-sync = **method (a)** (silence detection + syllable-weighted timing). Switch to (b) whisper only if Kaszti dislikes the sync.
 - 2026-10-21 – Kaszti: **no music, but ambience and SFX are very important to fill the empty space.** → Every scene gets a quiet ambience bed (room tone, tap drip, street/birds outside the window, clock) under the spot effects. Deliberate silences stay "quiet", never digital-dead.
 - 2026-10-21 – Kaszti: will deliver the recorded lines after Phase 2 (today).
+- 2026-10-21 – Kaszti: **Phase 3 "looks good overall"**; wants to tweak **some captions and some sound effects** (details tomorrow). Brings VO recordings + face photos on 2026-10-22. Resume plan: `HANDOFF.md`.
 - 2026-10-21 – Kaszti: **Phase 2 approved** ("really good, I'm impressed").
 - 2026-10-21 – Kaszti: **year 2031 → 2028.** VO-06 now reads „Kétezer-huszonnyolc. Mi lenne, ha nem egy kamera figyelne, hanem maga a ház?" Updated SCRIPT.md (S07 + recording list), captions.json, stamp, CLAUDE.md style example. 2028 is within the call's "next 5 years"; same 6 syllables, so timing is unchanged.
 - 2026-10-21 – Kaszti asked for a standing phone (9:16) format. **Official call re-checked: "16:9 képaránnyal"** ("készülhet okostelefonnal" only means it may be shot on a phone). Kaszti chose: **keep 16:9.**
