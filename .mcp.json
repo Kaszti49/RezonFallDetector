@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "cavalry": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:/Users/MSI/.claude/mcp-servers/cavalry/server/index.js"
+      ],
+      "env": {
+        "SSE_URL": "http://localhost:6768/sse"
+      }
+    }
+  }
+}

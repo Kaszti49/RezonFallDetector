@@ -1,5 +1,6 @@
 import { AbsoluteFill, getInputProps, Sequence } from "remotion";
 import { SfxTrack } from "./audio/SfxTrack";
+import { VoTrack } from "./audio/VoTrack";
 import { CaptionTrack } from "./components/CaptionTrack";
 import { Enter } from "./components/Enter";
 import { MaterialDefs } from "./components/material/MaterialDefs";
@@ -29,8 +30,13 @@ export const Film: React.FC = () => (
       );
     })}
     <CaptionTrack />
-    {/* Check renders of scattered frames pass --props={"noAudio":true}: Remotion's audio
-        mixing cannot write a non-contiguous frame list. Full renders always include sound. */}
-    {getInputProps().noAudio ? null : <SfxTrack />}
+    {audio === "all" || audio === "vo" ? <VoTrack /> : null}
+    {audio === "all" || audio === "sfx" ? <SfxTrack /> : null}
   </AbsoluteFill>
 );
+
+// Sound stems: --props='{"audio":"vo"}' or '"sfx"' renders one stem for the mix; "none" (or the older
+// {"noAudio":true}) is for check renders of scattered frames – Remotion's audio mixing cannot write a
+// non-contiguous frame list. The film itself always renders "all".
+const props = getInputProps();
+const audio: "all" | "vo" | "sfx" | "none" = props.noAudio ? "none" : ((props.audio as "all" | "vo" | "sfx" | "none" | undefined) ?? "all");

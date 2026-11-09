@@ -34,7 +34,10 @@
     "lint": "eslint src && tsc",
     "check": "node scripts/check-script.mjs && tsc",
     "render:animatic": "npm run check && remotion render REZON out/phase2/REZON_animatic.mp4 --scale=0.5",
-    "sfx": "node scripts/build-sfx.mjs"
+    "sfx": "node scripts/build-sfx.mjs",
+    "vo": "node scripts/process-vo.mjs",
+    "faces": "python scripts/cut-faces.py \"uploads/All 6 face cut outs.jfif\" public/faces src/faces.json",
+    "master": "node scripts/master.mjs"
   },
   "allowScripts": {
     "esbuild": false

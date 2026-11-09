@@ -28,6 +28,9 @@ export const STORY_STEPS: Impact[] = [...walkImpacts(WALK_IN), ...walkImpacts(WA
 const LAND = T03 + wordAt("S03", "vo_03", 11) + 0.6;
 export const THROW = { wind: LAND - 0.95, release: LAND - 0.55, land: LAND };
 
+// The tap: one drop every `period` s; it falls for `fall` s and lands (with a sound) at the end.
+export const DRIP = { period: 3.4, fall: 0.6 } as const;
+
 // The slip: feet go, she tilts back, and hits the floor (the same thud as S01).
 const SLIP = T04 + 0.25;
 export const FALL_HIT = SLIP + 0.6;
@@ -120,7 +123,10 @@ export const bathAt = (tau: number): BathState => {
     covered: tau >= THROW.land ? Math.min(1, (tau - THROW.land) / 0.12) : 0,
     night: ramp(tau, T05 + 0.4, STORY_END - 0.6),
     clockHours: 8 + 5 / 60 + ramp(tau, T05 + 0.4, STORY_END - 0.6, 0, 10, (v) => v),
-    drip: ((tau % 1.6) + 1.6) % 1.6 < 0.6 ? (((tau % 1.6) + 1.6) % 1.6) / 0.6 : 0,
+    drip: (() => {
+      const phase = ((tau % DRIP.period) + DRIP.period) % DRIP.period;
+      return phase < DRIP.fall ? phase / DRIP.fall : 0;
+    })(),
     ledOn: ((tau % 1) + 1) % 1 < 0.5,
     puddle: ramp(tau, T04 - 1, T04),
   };

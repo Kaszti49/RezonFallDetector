@@ -1,5 +1,4 @@
 import { useCurrentFrame } from "remotion";
-import { snap } from "../lib/anim";
 import { caption, CUES, FPS, scene } from "../timeline";
 import { CaptionStrip } from "./CaptionStrip";
 
@@ -26,27 +25,16 @@ export const CaptionTrack: React.FC = () => {
       const nextStart =
         p + 1 < c.pages.length ? words[last + 1] : duration + LINGER;
       if (t >= words[first] && t < nextStart) {
-        const revealed = words.filter(
-          (w, i) => i >= first && i <= last && w <= t,
-        ).length;
-        const pop = snap(Math.min(1, ((t - words[first]) * FPS) / 4));
+        const page = words.slice(first, last + 1);
         return (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              scale: `${0.94 + 0.06 * pop}`,
-              transformOrigin: "50% 95%",
-            }}
-          >
-            <CaptionStrip
-              seed={`${cue.line}-p${p}`}
-              lines={c.pages[p]}
-              highlight={c.highlight}
-              tone={c.tone as "problem" | "product"}
-              revealed={revealed}
-            />
-          </div>
+          <CaptionStrip
+            seed={`${cue.line}-p${p}`}
+            lines={c.pages[p]}
+            highlight={c.highlight}
+            tone={c.tone as "problem" | "product"}
+            revealed={page.filter((w) => w <= t).length}
+            ages={page.map((w) => Math.round((t - w) * FPS))}
+          />
         );
       }
       first = last + 1;

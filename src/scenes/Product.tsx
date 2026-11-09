@@ -59,7 +59,8 @@ import { useMemo } from "react";
 // Picture beats in scene seconds. The sound track reads the same table, so every sound
 // lands on the frame its picture event happens.
 export const BEATS = {
-  s08: { land: 0.75, cut: 2.75, lift: 3.2, snap: 9.75 },
+  // The device snaps shut after the line, 0.9 s before the cut.
+  s08: { land: 0.75, cut: 2.75, lift: 3.2, snap: scene("S08").seconds - 0.9 },
   s10: { rule: 2.0 },
   s11: { chime: 0.3, countFrom: 1.0, countTo: 6.8 },
   s12: { stand: 4.2, keys: 4.7 },
@@ -351,21 +352,23 @@ export const S08: React.FC = () => {
   }
 
   // Exploded view: lift, hold while the labels pop on their words, snap back together.
+  const SNAP = BEATS.s08.snap;
   const e = keys(tw, [
     [BEATS.s08.lift, 0],
     [4.2, 1],
-    [9.4, 1],
-    [BEATS.s08.snap, -0.04],
-    [9.85, 0],
+    [SNAP - 0.35, 1],
+    [SNAP, -0.04],
+    [SNAP + 0.1, 0],
   ]);
   const L = levels(HERO.cy, Math.max(0, e));
   const A = internalsAnchors(HERO.cx, HERO.cy, HERO.rx, HERO.k, Math.max(0, e));
   const tagScale = (word: number) =>
-    snap(ramp(t, w(word), w(word) + 0.25)) * (1 - ramp(t, 9.2, 9.45));
+    snap(ramp(t, w(word), w(word) + 0.25)) *
+    (1 - ramp(t, SNAP - 0.55, SNAP - 0.3));
   const cam = blendCamera(
     WIDE,
     clampCamera({ cx: 960, cy: 560, zoom: 1.05 }),
-    ramp(t, CUT_TO_HERO, 12),
+    ramp(t, CUT_TO_HERO, scene("S08").seconds),
   );
   const pulse = 0.55 + 0.45 * Math.sin(t * 5);
   return (
@@ -379,7 +382,7 @@ export const S08: React.FC = () => {
           k={HERO.k}
           h={HERO.h}
           seed="hero8"
-          led={LED.ok(t > 9.85 ? 1 : pulse)}
+          led={LED.ok(t > SNAP + 0.1 ? 1 : pulse)}
           lidLift={L.lidLift}
           inside={
             e > 0 ? (

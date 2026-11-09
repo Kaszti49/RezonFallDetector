@@ -1,116 +1,147 @@
 import { Audio } from "@remotion/media";
 import { interpolate, Sequence, staticFile } from "remotion";
+import { hashSeed, mulberry32 } from "../lib/random";
 import { REWIND_END, S01_HIT } from "../scenes/Problem";
 import { BEATS, s07Build, SECTION } from "../scenes/Product";
-import { FALL_DELAY, FALL_HIT, STORY_END, STORY_START, STORY_STEPS, THROW } from "../story/bathroomStory";
-import { FPS, lineTiming, scene, TOTAL_FRAMES, wordAt, type SceneId } from "../timeline";
+import { DRIP, FALL_DELAY, FALL_HIT, STORY_END, STORY_START, STORY_STEPS, THROW } from "../story/bathroomStory";
+import { CUES, FPS, lineTiming, scene, TOTAL_FRAMES, wordAt, type SceneId } from "../timeline";
 
-// Every sound is placed from the same constants the picture uses (walk plans, fall times,
-// beats, VO word times), so a sound can never drift off its frame. No music anywhere.
+// Every sound is placed from the same constants the picture uses (walk plans, fall times, beats,
+// VO word times), so a sound can never drift off its frame. Each one has a visible source or a
+// story job; repeated events rotate real takes. No music anywhere. (Sources: scripts/build-sfx.mjs.)
 
-type Cue = { file: string; frame: number; volume?: number; loop?: boolean; frames?: number; fade?: [number, number] };
+type Cue = { file: string; frame: number; volume: number; duck: number };
 
 const at = (id: SceneId, seconds: number) => scene(id).from + Math.round(seconds * FPS);
 const story = (tau: number) => scene("S02").from + Math.round(tau * FPS);
 const section = (sigma: number) => scene("S09").from + Math.round(sigma * FPS);
+// Small seeded level differences, so no two steps or drops are identical.
+const vary = (seed: string, spread = 0.3) => 1 - spread / 2 + mulberry32(hashSeed(seed))() * spread;
 
 const cues: Cue[] = [];
-const add = (file: string, frame: number, volume = 1, extra: Partial<Cue> = {}) => cues.push({ file, frame, volume, ...extra });
+// duck: how far the sound dips while someone speaks (0 = never, 0.45 ≈ −5 dB).
+const add = (file: string, frame: number, volume = 1, duck = 0.45) => cues.push({ file, frame, volume, duck });
 
-// S01 – the hook: one dull cardboard thud in the dark.
-add("thud", at("S01", S01_HIT));
+// ---- S01 – the hook: one dull fall on a tiled floor in the dark. ----
+add("thud", at("S01", S01_HIT), 1, 0);
 
-// S02–S05 – the bathroom: slippers, drips, the clock, the towel, the slip, the same thud.
-add("flap", at("S02", 0), 0.7);
-STORY_STEPS.filter((s) => s.t < STORY_START.S04).forEach((s, i) => add(`step_${(i % 4) + 1}`, story(s.t), 0.9));
-for (let tau = 0.6; tau < STORY_END; tau += 1.6) add("drip", story(tau), 0.8);
-add("clock_tick", story(0), 0.8, { loop: true, frames: Math.round(STORY_START.S05 * FPS) });
-add("towel_whoosh", story(THROW.release - 0.05), 0.9);
-add("towel_flop", story(THROW.land), 1);
-add("slip", story(FALL_HIT - FALL_DELAY + 0.05), 0.9);
-add("thud", story(FALL_HIT));
-add("clock_fast", at("S05", 0.3), 0.9);
-add("crickets", at("S05", 2.5), 1, { fade: [0, 2.5] });
+// ---- S02–S05 – the bathroom. ----
+add("flap", at("S02", 0), 0.6);
+// Her slippers, heel by heel, as she shuffles in and walks over under the camera.
+STORY_STEPS.filter((s) => s.t < STORY_START.S04).forEach((s, i) => add(`step_${(i % 6) + 1}`, story(s.t), 0.55 * vary(`step${i}`)));
+// The tap: one sound per visible drop, on the frame it lands. Ducked hard under the voice.
+for (let k = 0, tau = DRIP.fall; tau < STORY_END; k++, tau += DRIP.period) add(`drip_${(k % 4) + 1}`, story(tau), 0.5 * vary(`drip${k}`), 0.6);
+add("towel_whoosh", story(THROW.release - 0.05), 0.7);
+add("towel_flop", story(THROW.land), 0.8);
+// S04: the slip, then the same thud as the hook. The camera's inset feed pops up: nothing to see.
+add("slip", story(FALL_HIT - FALL_DELAY + 0.05), 0.8, 0);
+add("thud", story(FALL_HIT), 1, 0);
+add("tag_pop", at("S04", 1.25), 0.5, 0);
 
-// S06 – rewind, then the click when it stops on the empty morning.
-add("rewind", at("S06", 0.15), 0.9);
-add("click", at("S06", REWIND_END));
+// ---- S06 – rewind: button, motor, and the stop clunk on the frame the picture stops (3.0 s into the file). ----
+add("rewind", at("S06", REWIND_END - 3.0), 0.8, 0.35);
 
-// S07 – 2028: stamp, the camera peels and clatters off, the house slides together.
+// ---- S07 – 2028: the stamp, the camera peeled off like a sticker and clattering off-screen,
+// the house assembling from paper pieces. ----
 const w07 = (i: number) => wordAt("S07", "vo_06", i);
-add("stamp", at("S07", w07(0)));
-add("peel", at("S07", w07(6) - 0.1));
-add("camera_fall", at("S07", w07(6) + 1.0), 0.6);
+add("stamp", at("S07", w07(0) - 0.02), 0.75, 0);
+add("peel", at("S07", w07(6) - 0.1), 0.6);
+add("camera_fall", at("S07", w07(6) + 1.0), 0.5);
 const build07 = s07Build();
-add("paper_slide", at("S07", build07.start), 0.7);
-[0.25, 0.55, 0.85].forEach((f) => add("paper_slide_short", at("S07", build07.start + f * (build07.end - build07.start)), 0.7));
+[0, 0.3, 0.6, 0.9].forEach((f, i) => add(`paper_${i + 1}`, at("S07", build07.start + f * (build07.end - build07.start)), 0.55));
 
-// S08 – the device lands, opens, labels pop on their words, snaps shut.
+// ---- S08 – the device slides in and lands, opens, each label is tacked on its word, it snaps shut. ----
 const w08 = (i: number) => wordAt("S08", "vo_07", i);
-add("land", at("S08", BEATS.s08.land));
-add("paper_slide_short", at("S08", BEATS.s08.cut - 0.05), 0.5);
-add("lid_lift", at("S08", BEATS.s08.lift));
-[4, 6, 8, 10, 12].forEach((i) => add("tag_pop", at("S08", w08(i)), 0.8));
-add("snap", at("S08", BEATS.s08.snap));
+add("whoosh", at("S08", 0.2), 0.5);
+add("land", at("S08", BEATS.s08.land), 0.8);
+add("lid_lift", at("S08", BEATS.s08.lift), 0.5);
+[4, 6, 8, 10, 12].forEach((i) => add("tag_pop", at("S08", w08(i)), 0.45 * vary(`tag${i}`)));
+add("snap", at("S08", BEATS.s08.snap), 0.8);
 
-// S09–S10 – steps through the floor, the pen on the tape, the slip, the heavier thud.
-add("paper_slide", at("S09", 0), 0.7);
-SECTION.steps.forEach((s, i) => add(`step_${(i % 4) + 1}`, section(s.t), 0.6));
-add("pen_scratch", at("S09", 0.2), 1, { frames: (scene("S09").frames + scene("S10").frames) - 6 });
-add("slip", section(SECTION.slip + 0.05), 0.8);
-add("thud_heavy", section(SECTION.hit));
-add("tag_pop", at("S10", BEATS.s10.rule), 0.8);
+// ---- S09–S10 – what the floor hears: every step as a low thump through the slab; then the slip,
+// the heavier thud, and the pen jumping once on the spike. ----
+add("paper_slide", at("S09", 0), 0.5);
+SECTION.steps.forEach((s, i) => add(`stepf_${(i % 6) + 1}`, section(s.t), 0.7 * vary(`stepf${i}`), 0.3));
+add("slip", section(SECTION.slip + 0.05), 0.8, 0);
+add("thud_heavy", section(SECTION.hit), 1, 0);
+add("pencil", section(SECTION.hit + 0.03), 0.6, 0);
+add("tag_pop", at("S10", BEATS.s10.rule), 0.5, 0);
 
-// S11 – the two-tone chime, then the countdown ticking under the device voice.
-add("chime", at("S11", BEATS.s11.chime));
-for (let i = 0; i < 10; i++) {
-  add("count_tick", at("S11", BEATS.s11.countFrom + (i * (BEATS.s11.countTo - BEATS.s11.countFrom)) / 10), 0.8);
-}
+// ---- S11 – Rezon's chime; the countdown runs silently; her hand lifts twice and drops. ----
+add("chime", at("S11", BEATS.s11.chime), 0.8, 0.3);
+[1.35, 2.65].forEach((t) => add("cloth", at("S11", t), 0.5));
 
-// S12 – the alert: phone buzz on "riasztja", chair, keys.
-add("paper_slide", at("S12", 0), 0.7);
-add("phone_buzz", at("S12", wordAt("S12", "vo_10", 6)));
-add("creak", at("S12", BEATS.s12.stand), 0.8);
-add("keys", at("S12", BEATS.s12.keys), 0.9);
+// ---- S12 – the alert travels to the phone (rising swell), the phone vibrates on "riasztja",
+// her chair creaks, she grabs the keys. ----
+const tLit = wordAt("S12", "vo_10", 6);
+add("paper_slide", at("S12", 0), 0.5);
+add("signal", at("S12", tLit - 0.85), 0.5);
+add("phone_buzz", at("S12", tLit), 0.75, 0.25);
+add("creak", at("S12", BEATS.s12.stand), 0.6);
+add("keys", at("S12", BEATS.s12.keys), 0.5);
 
-// S13 – Anna is there: door, relief, the tagline built scrap by scrap.
-add("page_flip", at("S13", 0), 0.7);
-add("door", at("S13", 0.05), 0.6);
-add("settle", at("S13", BEATS.s13.smile), 0.8);
+// ---- S13 – she is there: the flat's door, cloth as Mari sits up, the tagline built scrap by scrap. ----
+add("page_flip", at("S13", 0), 0.6);
+add("door", at("S13", -0.3), 0.45);
+add("cloth", at("S13", 1.0), 0.6);
 const tag = scene("S13").cues[0].at;
-lineTiming("vo_11").words.forEach((w) => add("pop", at("S13", tag + w), 0.55));
+lineTiming("vo_11").words.forEach((w, i) => add(i === 0 ? "pop" : "tag_pop", at("S13", tag + w), (i === 0 ? 0.5 : 0.3) * vary(`tl${i}`)));
 
-// S14–S19 – the pop-up book: it opens, each member pops up and slides into the row.
-add("page_flip", at("S14", 0), 0.7);
-add("book_open", at("S14", 0.1), 0.8);
+// ---- S14–S19 – the pop-up book: it opens, each member pops up and slides into the row. ----
+add("page_flip", at("S14", 0), 0.6);
+add("book_open", at("S14", 0.1), 0.7);
 (["S15", "S16", "S17", "S18"] as const).forEach((id) => {
-  add("pop", at(id, 0), 0.9);
-  add("paper_slide_short", at(id, 3.25), 0.7);
+  add("pop", at(id, 0), 0.7);
+  add("whoosh", at(id, 3.25), 0.35);
 });
-[0.1, 0.22, 0.34, 0.46, 0.58].forEach((d) => add("pop", at("S19", d), 0.6));
-add("land", at("S19", 0.45), 0.7);
+[0.1, 0.22, 0.34, 0.46, 0.58].forEach((d, i) => add("pop", at("S19", d), 0.45 * vary(`fin${i}`), 0));
+add("land", at("S19", 0.45), 0.6, 0);
 
-// Room tone under everything (never digital silence), quieter in the dark hook and the book.
-const roomTone = (f: number) =>
-  interpolate(f, [0, scene("S02").from, scene("S14").from, TOTAL_FRAMES], [0.55, 1, 1, 0.6], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+// ---- Rooms: real indoor air under everything, per location. Short fades at the cuts; during the
+// S05 time-lapse the morning room slowly gives way to the night. ----
+type Bed = { file: string; from: number; to: number; volume: number; fadeIn: number; fadeOut: number };
+const S = (id: SceneId) => scene(id).from;
+const nightFrom = story(STORY_START.S05 + 0.4);
+const nightTo = story(STORY_END - 0.6);
+const BEDS: Bed[] = [
+  { file: "room_night", from: 0, to: S("S02"), volume: 0.5, fadeIn: 6, fadeOut: 6 },
+  { file: "room_bath", from: S("S02"), to: nightTo, volume: 0.6, fadeIn: 6, fadeOut: nightTo - nightFrom },
+  { file: "room_night", from: nightFrom, to: S("S06"), volume: 0.7, fadeIn: nightTo - nightFrom, fadeOut: 6 },
+  { file: "room_bath", from: S("S06"), to: S("S12"), volume: 0.5, fadeIn: 6, fadeOut: 6 },
+  { file: "room_city", from: S("S12"), to: S("S13"), volume: 0.6, fadeIn: 6, fadeOut: 6 },
+  { file: "room_bath", from: S("S13"), to: TOTAL_FRAMES, volume: 0.4, fadeIn: 6, fadeOut: 6 },
+];
+
+// Voice activity (frames) from the cue table: effects dip 3 frames before a line, recover over 8 after.
+const SPEECH = CUES.map((c) => [c.from, c.from + Math.round(c.timing.duration * FPS)] as const);
+const speaking = (f: number) =>
+  Math.max(0, ...SPEECH.map(([a, z]) => interpolate(f, [a - 3, a, z, z + 8], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })));
+
+// Overall effects level against the voice (the brief: about 8 dB under the VO).
+const SFX_GAIN = 1;
 
 export const SfxTrack: React.FC = () => (
   <>
-    <Audio src={staticFile("sfx/room_tone.wav")} volume={roomTone} />
+    {BEDS.map((bed, i) => {
+      const len = bed.to - bed.from;
+      return (
+        <Sequence key={`bed${i}`} from={bed.from} durationInFrames={len} layout="none" name={bed.file}>
+          <Audio
+            src={staticFile(`sfx/${bed.file}.wav`)}
+            loop
+            volume={(f: number) =>
+              SFX_GAIN *
+              bed.volume *
+              (1 - 0.3 * speaking(bed.from + f)) *
+              interpolate(f, [0, bed.fadeIn, len - bed.fadeOut, len], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+            }
+          />
+        </Sequence>
+      );
+    })}
     {cues.map((c, i) => (
-      <Sequence key={i} from={c.frame} durationInFrames={c.frames} layout="none" name={c.file}>
-        <Audio
-          src={staticFile(`sfx/${c.file}.wav`)}
-          loop={c.loop}
-          volume={
-            c.fade
-              ? (f: number) => interpolate(f / FPS, c.fade as [number, number], [0, c.volume ?? 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-              : c.volume
-          }
-        />
+      <Sequence key={i} from={c.frame} layout="none" name={c.file}>
+        <Audio src={staticFile(`sfx/${c.file}.wav`)} volume={(f: number) => SFX_GAIN * c.volume * (1 - c.duck * speaking(c.frame + f))} />
       </Sequence>
     ))}
   </>

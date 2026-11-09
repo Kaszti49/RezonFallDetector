@@ -26,14 +26,14 @@
       "pages": [["Rezon.", "A ház, ami meghallja, ha baj van."]] },
     { "id": "vo_12", "tone": "product", "display": "strip", "highlight": ["csapata"],
       "pages": [["Mi vagyunk a Rezon csapata."]] },
-    { "id": "team_1", "tone": "product", "display": "strip", "highlight": ["hangot"],
-      "pages": [["Én adok neki formát és hangot."]] },
-    { "id": "team_2", "tone": "product", "display": "strip", "highlight": ["lépéseket"],
-      "pages": [["Én tanítom meg érezni a lépéseket."]] },
-    { "id": "team_3", "tone": "product", "display": "strip", "highlight": ["családdal"],
-      "pages": [["Én kötöm össze a családdal."]] },
-    { "id": "team_4", "tone": "product", "display": "strip", "highlight": ["működjön"],
-      "pages": [["Én pedig összerakom, hogy működjön is."]] }
+    { "id": "team_1", "tone": "product", "display": "strip", "highlight": ["mari", "nénije"],
+      "pages": [["Mert mindenkinek van egy Mari nénije."]] },
+    { "id": "team_2", "tone": "product", "display": "strip", "highlight": ["kamerával"],
+      "pages": [["Nem akarjuk kamerával figyelni."]] },
+    { "id": "team_3", "tone": "product", "display": "strip", "highlight": ["jól"],
+      "pages": [["De tudni akarjuk, hogy jól van."]] },
+    { "id": "team_4", "tone": "product", "display": "strip", "highlight": ["rezont"],
+      "pages": [["Ezért építettük meg a Rezont."]] }
   ],
   "onscreen": {
     "noPicture": "NINCS KÉP",
@@ -50,7 +50,7 @@
     "team": [
       { "name": "Kaszti Benedek", "role": "design és projektvezetés" },
       { "name": "Szabó Viktor", "role": "jelfeldolgozás és MI" },
-      { "name": "Veres Bence", "role": "beágyazott szoftver" },
+      { "name": "Veress Bence", "role": "beágyazott szoftver" },
       { "name": "Bors Máté", "role": "elektronika és prototípus" }
     ]
   }

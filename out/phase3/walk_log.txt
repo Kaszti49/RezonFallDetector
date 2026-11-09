@@ -1,0 +1,31 @@
+Bundling 8%
+Bundling 21%
+Bundling 64%
+Bundling 70%
+Bundling 75%
+Bundling 81%
+Bundling 87%
+Bundling 93%
+Bundling 100%
+Copying public dir 10.8 MB
+Copying public dir 35.6 MB
+Getting composition
+[90mComposition          REZON[39m
+[90mCodec                h264[39m
+[90mOutput               out/phase3/walk2[39m
+[90mConcurrency          8x[39m
+Rendered 1/14
+Rendered 2/14
+Rendered 3/14
+Rendered 4/14
+Rendered 5/14
+Rendered 6/14
+Rendered 7/14
+Rendered 8/14
+Rendered 9/14
+Rendered 10/14
+Rendered 11/14
+Rendered 12/14
+Rendered 13/14
+Rendered 14/14
+[34m+                    out/phase3/walk2[39m

@@ -1,8 +1,9 @@
 import data from "./captions.json";
+import measured from "./vo-timing.json";
 
-// The only place timing lives. Scene slots come from SCRIPT.md; VO cues sit inside their scene.
-// Until real voiceover exists, VO length is estimated from syllables (Hungarian: one vowel = one
-// syllable). Phase 4 replaces the estimate with measured durations and word times.
+// The only place timing lives. Scene slots come from SCRIPT.md, re-timed to the measured voiceover
+// (`npm run vo` → vo-timing.json). A line without a recording yet keeps its syllable estimate
+// (Hungarian: one vowel = one syllable).
 
 export const FPS = 30;
 export const HARD_CAP_SECONDS = 118; // 1:58
@@ -41,6 +42,8 @@ export type LineId = (typeof data.captions)[number]["id"];
 type Cue = { line: LineId; at: number };
 type SceneDef = { id: SceneId; seconds: number; enter: Enter; cues: Cue[] };
 
+// `seconds` is the scene's minimum (its action). A scene grows when its voiceover needs more:
+// last cue end + HOLD (the brief: no shot holds longer than its VO plus 0.6 s).
 const SCENE_DEFS: SceneDef[] = [
   { id: "S01", seconds: 6, enter: "cut", cues: [{ line: "vo_01", at: 2.0 }] },
   { id: "S02", seconds: 5, enter: "flap", cues: [{ line: "vo_02", at: 0.5 }] },
@@ -48,13 +51,13 @@ const SCENE_DEFS: SceneDef[] = [
   { id: "S04", seconds: 3, enter: "cut", cues: [] },
   { id: "S05", seconds: 8, enter: "cut", cues: [{ line: "vo_04", at: 0.6 }] },
   { id: "S06", seconds: 4, enter: "cut", cues: [{ line: "vo_05", at: 0.3 }] },
-  { id: "S07", seconds: 7, enter: "cut", cues: [{ line: "vo_06", at: 0.4 }] },
-  { id: "S08", seconds: 12, enter: "cut", cues: [{ line: "vo_07", at: 1.3 }] },
+  { id: "S07", seconds: 7, enter: "cut", cues: [{ line: "vo_06", at: 0.3 }] },
+  { id: "S08", seconds: 9.8, enter: "cut", cues: [{ line: "vo_07", at: 1.3 }] },
   {
     id: "S09",
     seconds: 11,
     enter: "slide",
-    cues: [{ line: "vo_08", at: 0.6 }],
+    cues: [{ line: "vo_08", at: 0.45 }],
   },
   { id: "S10", seconds: 4, enter: "cut", cues: [] },
   {
@@ -66,9 +69,19 @@ const SCENE_DEFS: SceneDef[] = [
       { line: "dev_02", at: 4.0 },
     ],
   },
-  { id: "S12", seconds: 8, enter: "slide", cues: [{ line: "vo_10", at: 0.6 }] },
+  {
+    id: "S12",
+    seconds: 8,
+    enter: "slide",
+    cues: [{ line: "vo_10", at: 0.45 }],
+  },
   { id: "S13", seconds: 10, enter: "flip", cues: [{ line: "vo_11", at: 5.6 }] },
-  { id: "S14", seconds: 4, enter: "flip", cues: [{ line: "vo_12", at: 1.0 }] },
+  {
+    id: "S14",
+    seconds: 3.7,
+    enter: "flip",
+    cues: [{ line: "vo_12", at: 1.0 }],
+  },
   { id: "S15", seconds: 4, enter: "cut", cues: [{ line: "team_1", at: 0.9 }] },
   { id: "S16", seconds: 4, enter: "cut", cues: [{ line: "team_2", at: 0.9 }] },
   { id: "S17", seconds: 4, enter: "cut", cues: [{ line: "team_3", at: 0.9 }] },
@@ -94,7 +107,8 @@ const syllables = (w: string) => (w.match(/[aáeéiíoóöőuúüű]/gi) ?? []).
 const pauseAfter = (w: string) =>
   /[.!?]$/.test(w) ? 0.38 : /[,:–]$/.test(w) ? 0.24 : 0;
 
-export type LineTiming = { duration: number; words: number[] };
+// duration = audio file length (s); words = word starts (s); rms = loudness per frame (measured only).
+export type LineTiming = { duration: number; words: number[]; rms?: number[] };
 
 const estimate = (id: LineId): LineTiming => {
   const words = lineText(id).split(" ");
@@ -110,19 +124,27 @@ const estimate = (id: LineId): LineTiming => {
   return { duration: end, words: starts };
 };
 
-// Phase 4 fills this from the measured recordings (duration + word start times, seconds).
-const MEASURED: Partial<Record<LineId, LineTiming>> = {};
+// Measured recordings (scripts/process-vo.mjs). Each file starts 0.08 s before its first syllable.
+const MEASURED: Partial<Record<LineId, LineTiming>> = measured;
+export const hasRecording = (id: LineId) => id in MEASURED;
 
 export const lineTiming = (id: LineId): LineTiming =>
   MEASURED[id] ?? estimate(id);
 
 // ---- Scene table in frames ----
 
+const HOLD = 0.4; // a measured file already ends 0.2 s after its last syllable → 0.6 s in all
+
 export type SceneTiming = SceneDef & { from: number; frames: number };
 
 let cursor = 0;
 export const TIMELINE: SceneTiming[] = SCENE_DEFS.map((s) => {
-  const t = { ...s, from: cursor, frames: Math.round(s.seconds * FPS) };
+  const voEnd = Math.max(
+    0,
+    ...s.cues.map((c) => c.at + lineTiming(c.line).duration + HOLD),
+  );
+  const seconds = Math.ceil(Math.max(s.seconds, voEnd) * FPS) / FPS;
+  const t = { ...s, seconds, from: cursor, frames: Math.round(seconds * FPS) };
   cursor += t.frames;
   return t;
 });
@@ -163,6 +185,13 @@ if (TOTAL_FRAMES > HARD_CAP_SECONDS * FPS) {
   throw new Error(
     `Timeline is ${(TOTAL_FRAMES / FPS).toFixed(2)} s, over the ${HARD_CAP_SECONDS} s hard cap.`,
   );
+}
+for (const [id, m] of Object.entries(MEASURED)) {
+  if (m && m.words.length !== lineText(id as LineId).split(" ").length) {
+    throw new Error(
+      `${id}: vo-timing.json has ${m.words.length} words; the caption has a different count. Re-run npm run vo.`,
+    );
+  }
 }
 for (const s of TIMELINE) {
   for (const c of s.cues) {

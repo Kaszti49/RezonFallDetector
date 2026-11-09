@@ -54,10 +54,10 @@ Format: a pop-up book.
 | ID | Time | Picture | VO / caption |
 |---|---|---|---|
 | S14 | 1:32–1:36 | The book opens; the background is a warm kraft wall. | **VO-12:** „Mi vagyunk a Rezon csapata." |
-| S15 | 1:36–1:40 | Member 1 pops up. Tag: **Kaszti Benedek – design és projektvezetés** | **TEAM-1:** „Én adok neki formát és hangot." |
-| S16 | 1:40–1:44 | Member 2. Tag: **Szabó Viktor – jelfeldolgozás és MI** | **TEAM-2:** „Én tanítom meg érezni a lépéseket." |
-| S17 | 1:44–1:48 | Member 3. Tag: **Veres Bence – beágyazott szoftver** | **TEAM-3:** „Én kötöm össze a családdal." |
-| S18 | 1:48–1:52 | Member 4. Tag: **Bors Máté – elektronika és prototípus** | **TEAM-4:** „Én pedig összerakom, hogy működjön is." |
+| S15 | 1:36–1:40 | Member 1 pops up. Tag: **Kaszti Benedek – design és projektvezetés** | **TEAM-1:** „Mert mindenkinek van egy Mari nénije." |
+| S16 | 1:40–1:44 | Member 2. Tag: **Szabó Viktor – jelfeldolgozás és MI** | **TEAM-2:** „Nem akarjuk kamerával figyelni." |
+| S17 | 1:44–1:48 | Member 3. Tag: **Veress Bence – beágyazott szoftver** | **TEAM-3:** „De tudni akarjuk, hogy jól van." |
+| S18 | 1:48–1:52 | Member 4. Tag: **Bors Máté – elektronika és prototípus** | **TEAM-4:** „Ezért építettük meg a Rezont." |
 | S19 | 1:52–1:56 | **REZON** in cardboard letters pops up behind them, with the device on a small pedestal. Everyone in frame. Hold. | — |
 
 **Team line limit:** max **7 words / 3 seconds** each, or the cap breaks.
@@ -83,10 +83,10 @@ Record WAV, 48 kHz, 24-bit. Do 3 takes per line, with 1 s of silence before and 
 | vo_10.wav | Ha nincs válasz, a Rezon azonnal riasztja a családot. Nem órák múlva – másodpercek alatt. |
 | vo_11.wav | Rezon. A ház, ami meghallja, ha baj van. |
 | vo_12.wav | Mi vagyunk a Rezon csapata. |
-| team_1.wav | Én adok neki formát és hangot. *(Kaszti)* |
-| team_2.wav | Én tanítom meg érezni a lépéseket. *(Viktor)* |
-| team_3.wav | Én kötöm össze a családdal. *(Bence)* |
-| team_4.wav | Én pedig összerakom, hogy működjön is. *(Máté)* |
+| team_1.wav | Mert mindenkinek van egy Mari nénije. *(Kaszti)* |
+| team_2.wav | Nem akarjuk kamerával figyelni. *(Viktor)* |
+| team_3.wav | De tudni akarjuk, hogy jól van. *(Bence)* |
+| team_4.wav | Ezért építettük meg a Rezont. *(Máté)* |
 
 ## How the video answers the jury's questions
 
@@ -103,9 +103,9 @@ Record WAV, 48 kHz, 24-bit. Do 3 takes per line, with 1 s of silence before and 
 
 ---
 
-## Alternative team lines (Kaszti to choose – not in the film yet)
+## Alternative team lines (decided 2026-10-22: **set D**)
 
-The film currently uses **set A** (S15–S18 above). Pick one set; then S15–S18, the recording list and the captions are updated together. Every line is ≤ 7 words and ≈ 2–3 seconds. Order is always Kaszti → Viktor → Bence → Máté.
+Kaszti chose **set D** on 2026-10-22; it is now in S15–S18 and the recording list. The other sets are kept for reference only. Pick one set; then S15–S18, the recording list and the captions are updated together. Every line is ≤ 7 words and ≈ 2–3 seconds. Order is always Kaszti → Viktor → Bence → Máté.
 
 **A – current: "What I give it"**
 - Kaszti: „Én adok neki formát és hangot."

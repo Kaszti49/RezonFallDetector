@@ -10,12 +10,21 @@ Deadline: Mon 2026-10-26 23:59 (upload before 18:00). Final render: Sun 2026-10-
 | 0 Setup | done | 2026-10-21 |
 | 1 Style test (kill test) | done | 2026-10-21 |
 | 2 Animatic (960×540, silent + captions) | done | 2026-10-21 |
-| 3 Full animation (+ SFX pulled forward) | done – tweaks pending (captions, some SFX) | 2026-10-21 |
-| 4 Audio pass (VO + SFX + master) | – | – |
-| 5 Team pass (heads, lines, mouth flaps) | – | – |
+| 3 Full animation (+ SFX pulled forward) | done – tweaks done 2026-10-22 (captions, SFX overhaul) | 2026-10-21 |
+| 4 Audio pass (VO + SFX + master) | done – all 17 lines in (team_2/team_3 added 2026-10-23) – awaiting review | – |
+| 5 Team pass (heads, lines, mouth flaps) | done (photo heads, RMS mouth flaps + shape rules 2026-10-23) – awaiting review | – |
 | 6 Final render + QC | – | – |
 
 ## Approvals
+
+- 2026-10-23 – Kaszti: **submitted.** `out/REZON_Harman_2026.mp4` (the release candidate) was used for the sign-up; the team is waiting for the selection result.
+- 2026-10-23 – Kaszti: the last two lines are in `uploads/`: `vo_Viktor.mp3` = team_2, `vo_Veress.m4a` = team_3 (phone recording). "After implementing them we are basically done."
+- 2026-10-22 – Kaszti: name fix **Veress Bence** (two s). Updated SCRIPT.md S17 + captions.json.
+- 2026-10-22 – Kaszti: team lines = **set D** („Mert mindenkinek van egy Mari nénije." / „Nem akarjuk kamerával figyelni." / „De tudni akarjuk, hogy jól van." / „Ezért építettük meg a Rezont."). SCRIPT.md S15–S18 + recording list + captions updated; `npm run check` passes.
+- 2026-10-22 – Kaszti: **captions: every word its own paper cut-out**, like the tagline at the end.
+- 2026-10-22 – Kaszti: **SFX: "a high-pitched one and one that repeats a lot" are annoying – massive, logical improvement.** → full overhaul (see "Sound overhaul" below).
+- 2026-10-22 – Kaszti: faces = one sheet (`uploads/All 6 face cut outs.jfif`, 8 heads). Mapping: Kaszti = blond with glasses, Viktor = moustache/goatee, Bence = brown hair rounder face, Máté = light-brown hair slim face.
+- 2026-10-22 – Kaszti: VO delivered as mp3 (`uploads/`); `vo_011` = vo_11, `vo_Kaszti` = team_1, `vo_Bors` = team_4. **team_2 (Viktor) and team_3 (Bence) still arriving.**
 
 - 2026-10-21 – Kaszti: install official Remotion agent skill `remotion-dev/skills`, **project-only** (no global install). Done.
 - 2026-10-21 – Kaszti: Phase 0 approved ("the letters look good").
@@ -73,6 +82,54 @@ Output: `out/phase2/REZON_animatic.mp4` (960×540, silent, captions on). Composi
 - Team heads are placeholders (Phase 5).
 - Walk has slight foot sliding; S01 dust/thud could be stronger; per-scene light grading (warm morning → blue night → calm teal) to refine.
 - S07 is tight: the house finishes assembling just before the cut; real VO timing will decide.
+
+## Last two voices, flap rules, final render (2026-10-23)
+
+**team_2 / team_3:** copied to `audio/vo/raw/team_2.mp3` / `team_3.m4a` (uploads untouched), `npm run vo`. team_2 (Viktor) 2.03 s, team_3 (Bence) 2.26 s; the other 15 lines re-measured identically. The four team lines land within 0.6 LU of each other (−18.5…−19.1 LUFS). Viktor's take is full-band, just a darker voice; Bence's phone take is brighter with a faint hiss (~−80 dB) and phone noise-suppression holes above 12 kHz – inaudible under the room tone, so no EQ. No clicks (the full-height line in "kamerával" is the "k" release). Both lines are under the 3.1 s a 4 s team scene allows, so **the total stays 114.87 s (3446 frames)**. Captions + types pass. No local transcriber, so the words are checked by ear in the review, not by machine.
+
+**Mouth flap shape rules** (`src/scenes/TeamScenes.tsx`): the loudness flap failed on the new takes – Viktor's flat envelope held the mouth open 0.53 s through "kamerával", and Bence's frame-to-frame flicker on "De tudni" never survived the 2-frame hysteresis, so the mouth stayed shut for the first 0.6 s. Máté's line had the same gap (0.4 s shut on "meg a"). Two rules on top of the unchanged loudness flap (open above 15 % of the peak and within 80 % of the ±3-frame local max, 2-frame hysteresis, 1 frame ahead): an opening longer than 7 frames is split evenly by 2-frame closures; while the voice is above the floor, the mouth never stays shut longer than 6 frames (open 3 / shut 2, keeping 2 shut frames next to an existing opening). Result: Kaszti 10 flaps (**identical frame for frame**), Viktor 5 → 7, Bence 5 → 9, Máté 6 → 8; longest opening ≤ 7 frames everywhere, longest voiced shut ≤ 6. Checked on stills (open/shut frames for both new lines).
+
+**Pixel format:** every render so far was `yuvj420p` (full range, BT.601 tags), and `master.mjs` stream-copies the picture. `--color-space=bt709` gives `yuv420p`, TV range, BT.709 – the brief's format and the HD standard. Mean RGB vs a PNG still differs by ~1 level (no shift). The final picture is rendered with PNG intermediate frames (no JPEG step before x264).
+**Fonts:** stay on `@remotion/google-fonts`. A failed fetch can't fall back silently (retries, then the `delayRender` times out and the render aborts), so the local-copy switch planned in HANDOFF isn't needed.
+
+**Release candidate `out/REZON_Harman_2026.mp4`** (picture 18 min, stems + master 7 min). QC against the CLAUDE.md checklist:
+| Check | Result |
+|---|---|
+| Duration ≤ 1:58 (ffprobe) | ✅ 114.867 s = 1:54.9, 3446 frames |
+| 1920×1080, 16:9, H.264 yuv420p CRF ≤ 18, AAC 48 kHz, .mp4 | ✅ 1920×1080 square pixels, H.264 High@4.0, yuv420p TV range BT.709, x264 `crf=16.0`; AAC-LC 48 kHz stereo 320k; mp4 +faststart |
+| Size < 600 MB | ✅ 225.6 MB |
+| No music | ✅ only VoTrack + SfxTrack (foley + the brief's synthesized chime) |
+| −16 LUFS ±1, ≤ −1 dBTP, no clipping | ✅ decoded AAC: −16.0 LUFS, true peak −1.6 dBTP, flat factor 0. VO stem −16.1 / SFX stem −24.4 LUFS (8.3 dB under) |
+| Captions = SCRIPT.md, ő/ű | ✅ `npm run check` (17 captions, 22 on-screen strings); "Ő Mari néni." seen in the S02 frame |
+| No `[ ]` placeholders | ✅ none in `src/` or SCRIPT.md |
+| 4 team members with name + role | ✅ S15–S19 frames; Viktor 99.8–101.7 s and Bence 103.8–105.9 s present in the VO stem |
+| Criteria map covered | ✅ contact sheet, one frame per scene: S02–S05 problem; S07 2028 + S11 the house speaks; S11 device voice, S09 tape, S13 tagline; camera "NINCS KÉP", pendant on the hook, exploded view; S14–S19 team; S10 "ütés + mozdulatlanság = esés" |
+| No AI text in images, no third-party logos | ✅ all text is code-rendered; no Harman/JBL in `src/` |
+| Watched in full with sound + muted | ⏳ **Kaszti** |
+
+## Phase 4 + 5 – voice, sound overhaul, captions, team (2026-10-22)
+
+**Voiceover** (`npm run vo` → `scripts/process-vo.mjs`): `audio/vo/raw/<id>.mp3` (copies of the uploads, originals untouched) → 48 kHz mono, 80 Hz high-pass, leveled to −21 LUFS, 3:1 compression, re-leveled to −19 LUFS, limiter −3 dBFS, trimmed to 0.08 s before the first syllable and 0.2 s after the last → `public/vo/<id>.wav`. No denoise: the recordings' floor is about −80 dBFS. DEV lines: speech is measured dry, then a 300–4000 Hz band (2 × 2-pole each side), a +4 dB presence bump at 1.8 kHz and a short small-room echo (17/29/43 ms), re-leveled to −20 LUFS. team_4 peaks at 0.0 dBFS in the raw file, but its flat factor is 0 (no clipping).
+- **Word timing (method a):** speech segments from a 10 ms RMS envelope (gate −36 dBFS, gaps < 0.12 s bridged, blips < 0.12 s dropped, which also removes a lip smack at the start of vo_08). A dynamic program assigns word groups to segments by syllable fit, with a penalty of 0.25 for a pause that is not at punctuation; inside a segment, words are spread by syllables. A lone "–" lands at the end of the word before it, so it stays on its own caption page. Spot checks against the pauses all line up (e.g. "Egy@1.81", "ami@4.33", "másodpercek@6.00").
+- `src/vo-timing.json` = duration, word starts and 30 fps RMS per line. `timeline.ts` uses it in place of the syllable estimate, and throws if a line's word count differs from its caption.
+- **Re-timing:** each scene = max(action minimum, last VO end + 0.6 s). S07 7.73 s (cue moved 0.4 → 0.3), S08 9.8 s (it held ~2 s past its VO; the snap now follows the scene length), S09 11.23 s, S11 7.13 s, S12 8.27 s, S14 3.7 s. **Total 114.87 s (1:54.9).** team_2/team_3 keep the estimate (2.6 s); a longer recording grows its scene automatically.
+
+**Captions:** each word is its own scissor-cut paper scrap (Rubik 500, 44 px, as the brief), with paper colors from the tagline collage: cream 55 %, light kraft 20 %, steel 15 %, ink with paper letters 10 %. Highlight words sit on a teal (product) or red (problem) scrap with paper letters. Each scrap pops in on its word, stepped on twos (scale 0.45 → 1.12 → 1, small drop and wiggle); hidden words keep their place so nothing reflows. Letters never boil.
+
+**Team heads** (`npm run faces` → `scripts/cut-faces.py`, OpenCV, no rembg needed): GrabCut per head on the sheet; the open-mouth photo is aligned to the closed one by ECC (affine) on the eyes and forehead only, so the jaw can still drop. It is clipped just below the closed chin (no neck or collar). Both share one outline, so the sticker never changes shape; there is a hand-cut white paper border (7 px plus seeded wobble) and a drop shadow in the film. Head height is 285 puppet units, a big cut-out head on a small suit. Images are decoded before the first team frame (delayRender), because SVG `<image>` is not awaited.
+- **Mouth flap:** RMS per frame from the processed recording (`vo-timing.json`); open above 30 % of the line's peak; the state flips only after 2 frames (hysteresis), read 1 frame ahead to cancel the lag. Lines without a recording keep the syllable flap. *Deviation from the brief:* the RMS is precomputed with ffmpeg instead of read live with `visualizeAudio`. It is the same signal, but deterministic and without async audio loading during render.
+
+**Sound overhaul** (`scripts/build-sfx.mjs`, `src/audio/SfxTrack.tsx`). Diagnosis of Kaszti's two complaints: the old sound track had synthesized **sine-beep clock ticks at 2.5–3.1 kHz** looping through S02–S04 plus a fast version in S05, **crickets at 4.3–4.7 kHz**, a **15 s pen hiss at 4.5 kHz**, **10 countdown ticks** and **16 identical drips**. All of them are gone. Rules now:
+1. Every sound has a visible source or a story job.
+2. Repeated events rotate real takes (6 slipper steps, 4 sink drops) with seeded ±15 % level.
+3. Nothing shrill: bright sources are low-passed; measured spectral centroids are all 0.3–4.5 kHz.
+4. The voice wins: effects duck under speech (−5 dB typical, beds −3 dB).
+- Sources: **BigSoundBank (CC0, real foley)**, see `audio/sfx/CREDITS.md`, plus a few Kenney sounds. The only synthesized sounds left are the brief's E5→A5 chime (softer: lower harmonics, low-passed) and the low body under the thuds.
+- Cue logic: real body fall on tiles (hook = S04 fall, same file); slippers; one sink drop per visible drop (the tap now drips every 3.4 s instead of 1.6 s, picture and sound together); towel; slip scuff; inset pop; real cassette deck (button, motor, stop clunk exactly on REWIND_END); book-slam stamp; tape peel; camera clatter off-screen; paper pieces as the house assembles; whoosh and land for the device; lid; a paper tack per label; snap. **S09: the same slipper takes heard "through the floor"** (low-passed thumps: what Rezon feels). S10: heavy fall plus one pencil jump on the spike. S11: chime, then the **10 s countdown runs silently** (tension) with cloth on each weak hand lift. S12: a rising swell as the alert travels, the phone vibrating on "riasztja", chair, keys. S13: door off-screen, cloth, tagline scraps. The book: page, open, pop per member, slide.
+- S05 no longer has sped-up clock ticks (SCRIPT.md suggested them; Kaszti's "repeating" complaint wins). Time passing is now the morning room slowly giving way to the night room, plus the lonely drip.
+- Rooms: real house air (2458, low-passed at 2.5 kHz or 1 kHz for night), city through a closed window for Anna's office (0080). Crossfades at cuts; morning → night over the S05 time-lapse.
+
+**Mix / master** (`npm run master -- <picture.mp4> <out.mp4>`): renders stems with `--props` `{"audio":"vo"|"sfx"}`, sums them, applies gain to −16 LUFS, then a 4×-oversampled limiter at −1.6 dBFS, AAC 320k, +faststart. Measured: VO stem −16.2 LUFS, SFX stem −24.4 LUFS (**8.2 dB under the voice**, as the brief asks); master **−16.0 LUFS, −1.6 dBFS peak**. Hit check on the SFX stem: thuds at 0.68 / 18.94 s, rewind stop 32.02 s, stamp 33.46 s, snap 49.63 s, heavy thud 62.76 s, chime 66.07 s, phone buzz 75.94 s.
 
 ## Phase 3 – full animation (2026-10-21)
 
