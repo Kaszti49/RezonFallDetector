@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VL53L5CX Hand Test – Wiring</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1d232a; font-size: 9.3pt; line-height: 1.3; margin: 0; }
+  p { margin: 1.4mm 0; }
+  h1 { font-size: 17pt; margin: 0 0 1mm; }
+  h2 { font-size: 11.5pt; margin: 3.2mm 0 1.5mm; padding-bottom: 0.8mm; border-bottom: 2px solid #1d232a; }
+  .wiring { display: block; width: 76%; margin: 0 auto; }
+  th, td { padding: 0.9mm 1.8mm !important; }
+  .page { overflow: hidden; }
+  .sub { color: #5a6570; margin-bottom: 3mm; }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.8pt; }
+  th, td { border: 1px solid #c9d0d6; padding: 1.3mm 2mm; text-align: left; vertical-align: top; }
+  th { background: #eef2f5; }
+  .sw { display: inline-block; width: 22px; height: 9px; border-radius: 2px; vertical-align: middle; margin-right: 4px; border: 1px solid #0003; }
+  .warn { background: #fff4e5; border-left: 4px solid #e8890c; padding: 2mm 3mm; margin: 3mm 0; }
+  .ok { background: #eaf7ee; border-left: 4px solid #2e9a50; padding: 2mm 3mm; margin: 3mm 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  ol { margin: 1mm 0; padding-left: 5mm; }
+  ol li { margin-bottom: 1.2mm; }
+  code, .mono { font-family: Consolas, monospace; font-size: 9.3pt; background: #eef2f5; padding: 0 1mm; border-radius: 2px; }
+  .check li { list-style: none; margin-left: -4mm; }
+  .check li::before { content: "☐  "; }
+  svg text { font-family: "Segoe UI", Arial, sans-serif; }
+  .small { font-size: 9pt; color: #5a6570; }
+</style>
+</head>
+<body>
+
+<!-- ============================ PAGE 1 ============================ -->
+<div class="page">
+  <h1>VL53L5CX ↔ ESP32: hand-distance test</h1>
+  <div class="sub">Practice build · classic ESP32 DevKit V1 (30-pin) · VL53L5CX 8×8 time-of-flight “lidar” sensor · powered from the PC over USB</div>
+
+  <div class="warn"><b>Before you start:</b> unplug the robot's battery and pull the motor-driver wires off the ESP32. For this test the ESP32 is powered <b>only by the USB cable</b>. Peel the protective film off the sensor window.</div>
+
+  <svg viewBox="40 10 660 355" class="wiring">
+    <!-- ESP32 board -->
+    <rect x="60" y="14" width="200" height="306" rx="8" fill="#22272e"/>
+    <rect x="105" y="22" width="110" height="70" rx="3" fill="#9aa3ab"/>
+    <text x="160" y="52" text-anchor="middle" font-size="12" font-weight="700" fill="#22272e">ESP32-WROOM</text>
+    <text x="160" y="68" text-anchor="middle" font-size="9" fill="#22272e">antenna end ↑</text>
+    <text x="160" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">ESP32 DevKit V1</text>
+    <text x="160" y="206" text-anchor="middle" font-size="10" fill="#c9d0d6">30-pin, top view</text>
+    <rect x="140" y="304" width="40" height="24" rx="3" fill="#b8c0c7"/>
+    <text x="160" y="360" text-anchor="middle" font-size="10" fill="#1d232a">micro-USB → PC</text>
+    <g id="leftpins"></g>
+    <g id="rightpins"></g>
+
+    <!-- Sensor board -->
+    <rect x="510" y="66" width="160" height="230" rx="8" fill="#5b3f8c"/>
+    <rect x="600" y="160" width="44" height="26" rx="3" fill="#111"/>
+    <circle cx="612" cy="173" r="5" fill="#333" stroke="#777"/>
+    <circle cx="632" cy="173" r="5" fill="#333" stroke="#777"/>
+    <text x="622" y="204" text-anchor="middle" font-size="9" fill="#e6dcf5">sensor window</text>
+    <text x="622" y="92" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">VL53L5CX</text>
+    <text x="622" y="107" text-anchor="middle" font-size="9.5" fill="#e6dcf5">breakout board</text>
+    <text x="622" y="250" text-anchor="middle" font-size="9" fill="#e6dcf5">on-board pull-ups</text>
+    <text x="622" y="262" text-anchor="middle" font-size="9" fill="#e6dcf5">SDA/SCL → 3.3 V</text>
+    <text x="622" y="274" text-anchor="middle" font-size="9" fill="#e6dcf5">(most boards)</text>
+    <g id="senspins"></g>
+    <g id="wires"></g>
+  </svg>
+
+  <h2>Wire list (7 wires)</h2>
+  <table>
+    <tr><th>#</th><th>Suggested colour</th><th>ESP32 pin</th><th>Sensor pin<br><span class="small">(name on your board may differ)</span></th><th>What it does</th></tr>
+    <tr><td>1</td><td><span class="sw" style="background:#d93025"></span>red</td><td><b>3V3</b></td><td><b>VIN</b> / 3V3, or on 9-pin boards <b>AVDD + IOVDD + PWREN, all three</b></td><td>Power, 3.3 V. <b>AVDD is mandatory</b> (laser + measuring core); IOVDD sets the logic level. Never 5 V on a 3.3 V-only board</td></tr>
+    <tr><td>2</td><td><span class="sw" style="background:#111"></span>black</td><td><b>GND</b></td><td><b>GND</b></td><td>Common reference (0 V)</td></tr>
+    <tr><td>3</td><td><span class="sw" style="background:#1a73e8"></span>blue</td><td><b>D21</b></td><td><b>SDA</b></td><td>I²C data, both directions</td></tr>
+    <tr><td>4</td><td><span class="sw" style="background:#f2c200"></span>yellow</td><td><b>D22</b></td><td><b>SCL</b></td><td>I²C clock, driven by the ESP32</td></tr>
+    <tr><td>5</td><td><span class="sw" style="background:#1e9e4a"></span>green</td><td><b>D18</b></td><td><b>LPn</b></td><td>Must be HIGH, or the sensor ignores I²C (the sketch sets it HIGH)</td></tr>
+    <tr><td>6</td><td><span class="sw" style="background:#f4f4f4"></span>white</td><td><b>D19</b></td><td><b>I2C_RST</b> / RST</td><td>Reset, active HIGH, so it must stay LOW (the sketch sets it LOW)</td></tr>
+    <tr><td>7</td><td><span class="sw" style="background:#f57c00"></span>orange</td><td><b>D25</b> <span class="small">(D23 was bent)</span></td><td><b>INT</b> / GPIO1</td><td>Sensor pulls it LOW when a new frame is ready, so the ESP32 gets an interrupt</td></tr>
+    <tr><td>–</td><td colspan="2">part of wire 1 (3V3)</td><td><b>PWREN</b> / PWR_EN</td><td>Switches the board's own regulator on (details on page 3)</td></tr>
+  </table>
+  <p class="small">Each of the four control pins (LPn, I2C_RST, INT, PWREN) is explained in detail on page 3. If your breakout lacks one, just skip that wire. Using the black expansion shield? Use the <b>S</b> pin of 21/22/18/19, and take power from a <b>3V3</b> pin. If you use the <b>V</b> pins of the G-V-S rows, set <b>JUMP to 3.3V</b> first and measure V–G = 3.3 V before you connect the sensor.</p>
+
+  <h2>Check before plugging in USB</h2>
+  <ul class="check">
+    <li>Multimeter, continuity mode: ESP32 3V3 → sensor VIN beeps; ESP32 GND → sensor GND beeps; 3V3 → GND does <b>NOT</b> beep</li>
+    <li>SDA → 21 and SCL → 22, not swapped. Swapped is the most common mistake, and the scan then finds nothing</li>
+    <li>Robot battery disconnected; nothing else on 3V3/GND</li>
+    <li>After plugging in: the ESP32's red power LED is on and the sensor's LED (if it has one) is on. Touch the sensor: it must not get warm</li>
+  </ul>
+</div>
+
+<!-- ============================ PAGE 2 ============================ -->
+<div class="page">
+  <h1>How it works: from your hand to the screen</h1>
+  <div class="sub">Every block below is something you just wired, or software that runs on it.</div>
+
+  <svg viewBox="0 18 720 122" width="92%">
+    <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1d232a"/></marker></defs>
+    <g font-size="11">
+      <rect x="4" y="40" width="96" height="60" rx="8" fill="#fde7d9" stroke="#c96a2b"/>
+      <text x="52" y="66" text-anchor="middle" font-weight="700">Your hand</text>
+      <text x="52" y="82" text-anchor="middle" font-size="9.5">reflects IR light</text>
+
+      <rect x="150" y="40" width="120" height="60" rx="8" fill="#ece3f8" stroke="#5b3f8c"/>
+      <text x="210" y="62" text-anchor="middle" font-weight="700">VL53L5CX</text>
+      <text x="210" y="77" text-anchor="middle" font-size="9.5">940 nm laser + 8×8</text>
+      <text x="210" y="89" text-anchor="middle" font-size="9.5">light-timing grid</text>
+
+      <rect x="330" y="40" width="120" height="60" rx="8" fill="#e3edf9" stroke="#1a73e8"/>
+      <text x="390" y="62" text-anchor="middle" font-weight="700">ESP32</text>
+      <text x="390" y="77" text-anchor="middle" font-size="9.5">reads, filters,</text>
+      <text x="390" y="89" text-anchor="middle" font-size="9.5">blinks LED, prints</text>
+
+      <rect x="490" y="40" width="96" height="60" rx="8" fill="#eef2f5" stroke="#5a6570"/>
+      <text x="538" y="62" text-anchor="middle" font-weight="700">USB-UART</text>
+      <text x="538" y="77" text-anchor="middle" font-size="9.5">chip on DevKit</text>
+      <text x="538" y="89" text-anchor="middle" font-size="9.5">CP2102/CH340</text>
+
+      <rect x="616" y="40" width="100" height="60" rx="8" fill="#eaf7ee" stroke="#2e9a50"/>
+      <text x="666" y="62" text-anchor="middle" font-weight="700">PC browser</text>
+      <text x="666" y="77" text-anchor="middle" font-size="9.5">Web Serial →</text>
+      <text x="666" y="89" text-anchor="middle" font-size="9.5">8×8 heat-map</text>
+
+      <path d="M148,58 L102,58" stroke="#c96a2b" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+      <path d="M102,82 L148,82" stroke="#c96a2b" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+      <text x="125" y="30" text-anchor="middle" font-size="9.5">light pulse</text>
+      <text x="125" y="120" text-anchor="middle" font-size="9.5">echo after t ns</text>
+
+      <path d="M272,70 L328,70" stroke="#1d232a" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="300" y="30" text-anchor="middle" font-size="9.5" font-weight="700">I²C</text>
+      <text x="300" y="120" text-anchor="middle" font-size="9.5">SDA+SCL, 0x29</text>
+      <text x="300" y="133" text-anchor="middle" font-size="9.5">400 kHz</text>
+
+      <path d="M452,70 L488,70" stroke="#1d232a" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="470" y="30" text-anchor="middle" font-size="9.5" font-weight="700">UART</text>
+      <text x="470" y="120" text-anchor="middle" font-size="9.5">115200 baud</text>
+
+      <path d="M588,70 L614,70" stroke="#1d232a" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="601" y="30" text-anchor="middle" font-size="9.5" font-weight="700">USB</text>
+      <text x="601" y="120" text-anchor="middle" font-size="9.5">COMx</text>
+    </g>
+  </svg>
+
+  <div class="two">
+    <div>
+      <h2>1 · Power</h2>
+      <p>The USB cable gives <b>5 V</b>. The regulator on the DevKit (AMS1117) turns it into <b>3.3 V</b> for the ESP32 and, through the red wire, for the sensor. The sensor draws about <b>100 mA</b> while measuring; the regulator can supply ~800 mA, so there's plenty of headroom. Black GND is the shared 0 V that all signals are measured against. Without it, no communication works.</p>
+
+      <h2>2 · Measuring: time of flight</h2>
+      <p>A tiny infrared laser (VCSEL, 940 nm, invisible, Class 1 eye-safe) flashes light across a <b>45° × 45°</b> cone. A receiver grid of single-photon detectors (SPADs) is split into <b>8 × 8 = 64 zones</b>. Each zone times how long the light took to come back:</p>
+      <p style="text-align:center;font-size:12pt"><b>distance = c · t / 2</b></p>
+      <p>c = 300 000 km/s, and /2 because the light goes there <i>and</i> back. A hand at <b>10 cm</b> → t ≈ <b>0.67 ns</b>. 1 m → 6.7 ns. The sensor builds a histogram of millions of photon arrivals, so it handles this timing itself. Each zone also gets a <b>status</b>: 5 or 9 = valid, anything else = ignore.</p>
+      <p>8×8 mode: <b>15 frames per second</b> (one every ~66 ms). Range ≈ 2 cm to 4 m.</p>
+    </div>
+    <div>
+      <h2>3 · Talking: the I²C bus</h2>
+      <p>Two wires, shared. <b>SCL</b> = clock, always driven by the ESP32 (the “controller”). <b>SDA</b> = data, driven by whoever is talking. Both lines are <b>open-drain</b>: chips can only <i>pull them down to 0 V</i>. The <b>pull-up resistors</b> on the sensor board pull them back up to 3.3 V. That's why it's safe to share the bus and why the pull-ups must go to 3.3 V, not 5 V.</p>
+      <p>Every message starts with the sensor's address. The ESP32 says “<b>0x29</b>, I want to write”, and the sensor answers with an ACK by pulling SDA low on the 9th clock:</p>
+      <svg id="i2c" viewBox="0 0 340 120" width="78%"></svg>
+      <p class="small">START = SDA falls while SCL is high. A bit is read while SCL is high. After the address come a 16-bit register number and the data bytes, then STOP.</p>
+    </div>
+  </div>
+
+  <h2>4 · What happens when you plug it in (the sketch, step by step)</h2>
+  <table>
+    <tr><th style="width:8%">Step</th><th style="width:30%">ESP32 does</th><th>Why / what you see</th></tr>
+    <tr><td>1</td><td>LPn HIGH · I2C_RST pulse · INT armed</td><td>Enables the sensor's I²C, clears any half-finished transfer, and arms the “frame ready” interrupt</td></tr>
+    <tr><td>2</td><td><code>Wire.begin(21, 22)</code> at 400 kHz, I²C scan</td><td>Serial prints <code>0x29</code>. If nothing shows: wiring, power or LPn</td></tr>
+    <tr><td>3</td><td><code>tof.begin()</code>: uploads <b>~84 KB firmware</b> into the sensor</td><td>The sensor keeps no firmware between power cycles, so this happens on every boot. Takes a few seconds</td></tr>
+    <tr><td>4</td><td>Set 8×8 resolution, 15 Hz, start ranging</td><td>The laser starts flashing (a phone camera may show a faint glow)</td></tr>
+    <tr><td>5</td><td>INT falls (every ~66 ms) → read the result block (~1.4 KB, ≈30 ms at 400 kHz)</td><td>64 distances in mm + 64 status codes per frame. The web page shows the INT pulse rate (≈15/s)</td></tr>
+    <tr><td>6</td><td>Keep valid zones, find the closest one, blink the blue LED (D2)</td><td>Closer hand = faster blink, like a parking sensor</td></tr>
+    <tr><td>7</td><td>Print <code>F,d0,d1,…,d63</code> (−1 = no target) over USB</td><td>The web page reads this line and paints the 8×8 heat-map</td></tr>
+  </table>
+
+  <div class="ok"><b>Orientation test:</b> stand behind the sensor (looking where it looks) and hold your hand on your <b>left</b>. The left side of the heat-map should light up. If it's mirrored, change <code>MIRROR_X</code> in the sketch; up/down → <code>FLIP_Y</code>.</div>
+</div>
+
+<!-- ============================ PAGE 3 ============================ -->
+<div class="page">
+  <h1>The four control pins: LPn · I2C_RST · INT · PWREN</h1>
+  <div class="sub">Power (VIN, GND) and data (SDA, SCL) are the obvious wires. These four carry no data. They decide <b>whether</b> the sensor listens, <b>reset</b> its I²C logic, <b>tell</b> the ESP32 that something happened, and <b>switch</b> its power.</div>
+
+  <div class="ok" style="margin-top:1mm"><b>Reading pin names:</b> a trailing <b>n</b> (LP<b>n</b>), a bar over the name or a “#” means <b>active-LOW</b>: the function is ON when the pin is at 0 V. No “n” (I2C_RST, PWREN) means <b>active-HIGH</b>: ON at 3.3 V. “HIGH” for this sensor means above ≈ 0.7 × IOVDD (≈ 2.3 V); “LOW” means below ≈ 0.3 × IOVDD (≈ 1.0 V). Anything in between is undefined, which is why a <b>floating</b> (unconnected, no resistor) input is dangerous: it drifts through that zone with every bit of noise.</div>
+
+  <table>
+    <tr><th>Pin</th><th>Direction</th><th>Active level → effect</th><th>State in our build</th><th>ESP32</th><th>If left floating</th></tr>
+    <tr><td><b>LPn</b></td><td>ESP32 → sensor (input)</td><td>LOW → I²C interface <b>off</b></td><td>HIGH all the time</td><td>D18, output</td><td>Random “sensor not found” or dropouts</td></tr>
+    <tr><td><b>I2C_RST</b></td><td>ESP32 → sensor (input)</td><td>HIGH → I²C interface <b>reset</b></td><td>10 ms HIGH pulse at boot, then LOW</td><td>D19, output</td><td>Noise can reset the bus mid-transfer and corrupt frames</td></tr>
+    <tr><td><b>INT</b></td><td>sensor → ESP32 (open-drain output)</td><td>LOW → “<b>new frame ready</b>”</td><td>HIGH (pull-up), short LOW pulse every ~66 ms</td><td>D25, input + pull-up + interrupt</td><td>No pull-up, so it never returns HIGH and is useless</td></tr>
+    <tr><td><b>PWREN</b></td><td>3V3 / ESP32 → board regulator</td><td>HIGH → sensor <b>powered</b></td><td>tied to 3V3 (always on)</td><td>– (could be a GPIO)</td><td>Board dependent: sensor dead or flickering</td></tr>
+  </table>
+
+  <div class="two">
+    <div>
+      <h2>LPn: “Low-Power, active-low” = comms enable</h2>
+      <p><b>What it is:</b> an on/off switch for the sensor's I²C interface. ST calls it <i>comms enable</i>. <b>HIGH</b>: the chip listens to SDA/SCL. <b>LOW</b>: the chip ignores the bus completely, as if it weren't there. It stays <b>powered</b>, so its loaded firmware, its settings and its I²C address all survive. Bringing LPn back HIGH does <b>not</b> require the 84 KB upload again.</p>
+      <p><b>Electrically:</b> a CMOS input referenced to IOVDD (3.3 V). It draws almost no current (µA), so an ESP32 GPIO drives it easily. Good breakouts add a pull-up resistor (often 47 kΩ) so it is HIGH by default; cheap ones sometimes don't. That's why we drive it from <b>D18</b> instead of trusting the board.</p>
+      <p><b>Why it exists (the real reason):</b> every VL53L5CX powers up at the <b>same address, 0x29</b>, and the address is <b>not stored permanently</b>. To put 2+ sensors on one I²C bus (e.g. front-left and front-right on the robot), give each sensor its own LPn wire:</p>
+      <ol>
+        <li>Hold every LPn LOW, so nobody answers.</li>
+        <li>Raise sensor 1's LPn and tell it “your address is now 0x30”.</li>
+        <li>Raise sensor 2's LPn: it's still 0x29, so tell it “0x31”. Repeat.</li>
+        <li>Now all LPn are HIGH and each sensor answers at its own address.</li>
+      </ol>
+      <p><b>In our sketch:</b> <code>pinMode(18, OUTPUT); digitalWrite(18, HIGH);</code> runs <i>before</i> <code>Wire.begin</code> and stays HIGH.</p>
+      <p><b>Try it:</b> with the page open, touch a jumper from D18's wire to GND (or change the code). The frames stop, because the ESP32's reads get no ACK. Release it and they come back.</p>
+
+      <h2>I2C_RST: I²C interface reset</h2>
+      <p><b>What it is:</b> an <b>active-HIGH</b> reset for the sensor's I²C slave logic only, not the measuring core. Drive it 0 → 1 → 0 and the interface returns to “idle, waiting for START”.</p>
+      <p><b>Why you need it, the “stuck bus”:</b> I²C has no timeouts. Suppose the ESP32 resets (you press EN, upload new code, or a motor causes a brown-out) while the sensor is sending a byte with SDA held LOW. The ESP32 reboots, but the sensor is still powered and still waiting for the clocks that would let it finish. SDA stays LOW forever. A new START needs SDA HIGH, so <b>the bus is dead</b> and the scan finds nothing until you unplug USB. A pulse on I2C_RST clears it instantly.</p>
+      <p><b>In our sketch:</b> every boot does <code>HIGH, 10 ms, LOW, 10 ms</code> on <b>D19</b>, then holds it LOW. If the pin floated, noise could fire a reset mid-frame (garbage data or vanishing sensor). Boards usually have a pull-down; with the wire connected we don't rely on it.</p>
+    </div>
+    <div>
+      <h2>INT: interrupt, “I have news”</h2>
+      <p><b>What it is:</b> the only control pin that is an <b>output</b> of the sensor. When a frame is finished (every ~66 ms at 15 Hz), the sensor pulls INT <b>LOW</b> for a short pulse.</p>
+      <p><b>Open-drain:</b> inside the chip there is just a transistor between INT and GND. It can pull the line <b>down</b> but never drive it up. Something else must pull it up to HIGH: a resistor on the board, or the ESP32's internal ~45 kΩ pull-up, which we switch on with <code>INPUT_PULLUP</code>. Benefits: the HIGH level is whatever the pull-up goes to (3.3 V, perfect for the ESP32), and several sensors can share one INT wire (“wired-OR”: any of them can pull it low).</p>
+      <p><b>Why use it instead of asking:</b> without INT the ESP32 must <b>poll</b>, i.e. keep asking “ready yet?” over I²C. Every question is a bus transaction, wasted time and wasted current. With INT the hardware tells the ESP32 the instant data exists: lower latency, a quiet bus, and the CPU can even <b>sleep</b> and be woken by INT (essential for battery devices).</p>
+      <p><b>On the ESP32:</b> <code>attachInterrupt(25, onSensorInt, FALLING)</code>. On every HIGH→LOW edge the CPU pauses whatever it's doing and runs the tiny <b>ISR</b> (interrupt service routine). It only adds 1 to a counter and sets a flag, in microseconds. <b>Never do I²C inside an ISR</b> (too slow, and not allowed). <code>loop()</code> sees the flag and reads the frame. If INT isn't working, a fallback poll every 20 ms keeps the demo alive.</p>
+      <p><b>Check it:</b> the web page shows <b>INT pulses/s</b>. ≈ 15 means perfect. 0 with a heat-map still updating means the INT wire or pin is wrong and you are running on the polling fallback.</p>
+      <p><b>Why D25:</b> it isn't a boot-strapping pin (0, 2, 5, 12, 15 are), it supports interrupts, and it has an internal pull-up (34–39 don't). <i>Robot note:</i> the robot plan used D25 for motor PWMA; that moves to another pin later.</p>
+      <p><b>Advanced:</b> ST's driver has <i>detection thresholds</i>. The sensor only pulls INT when something is closer than X mm in chosen zones, so a robot or fall detector can sleep until something actually happens.</p>
+
+      <h2>PWREN: power enable (board pin)</h2>
+      <p><b>What it is:</b> not a pin of the chip itself. It exists on some breakouts (generic 9-pin modules, ST's SATEL board) and is the <b>EN input of the on-board regulator / load switch</b> that feeds the chip's AVDD and IOVDD. <b>HIGH</b> = powered; <b>LOW</b> = completely off (µA).</p>
+      <p><b>PWREN vs LPn:</b> LPn LOW is “stop listening, stay alive”. PWREN LOW is “power gone”: firmware, settings and address are lost, and the next start needs the full 84 KB upload (a few seconds) again.</p>
+      <p><b>Use:</b> a hard reset if the sensor ever locks up, or zero-power standby in battery projects. <b>Our build:</b> tie it to 3V3 if your board has it. If you drive it from a GPIO instead, set it HIGH and wait ≥ 10 ms for the regulator before touching LPn or I²C.</p>
+      <p class="small"><b>AVDD vs IOVDD</b> (on boards that expose both): AVDD = 3.3 V supply for the analog part and the laser driver. IOVDD = sets the logic level of SDA, SCL, LPn, I2C_RST and INT (1.8 V or 3.3 V). It <b>must be 3.3 V</b> to talk to an ESP32. Boards with a single VIN make both on-board.</p>
+    </div>
+  </div>
+
+  <h2>Power-up timeline (not to scale)</h2>
+  <svg id="timing" viewBox="0 0 720 196" width="100%"></svg>
+</div>
+
+<script>
+// ---------- ESP32 pins (DOIT DevKit V1 30-pin, antenna up, top view) ----------
+const L = ['EN','VP','VN','D34','D35','D32','D33','D25','D26','D27','D14','D12','D13','GND','VIN'];
+const R = ['D23','D22','TX0','RX0','D21','D19','D18','D5','TX2','RX2','D4','D2','D15','GND','3V3'];
+const Y0 = 104, DY = 13.5, NS = 'http://www.w3.org/2000/svg';
+const used = { 'D22':1, 'D21':1, 'D19':1, 'D18':1, '3V3':1 };
+function el(tag, attrs, parent, text) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; parent.appendChild(e); return e; }
+const lp = document.getElementById('leftpins'), rp = document.getElementById('rightpins');
+L.forEach((n, i) => { const y = Y0 + i * DY; const u = n === 'D25';
+  el('circle', { cx: 70, cy: y, r: 3.6, fill: u ? '#ffd54a' : '#c9a227', stroke: u ? '#fff' : 'none' }, lp);
+  el('text', { x: 78, y: y + 3.5, 'font-size': 9, fill: u ? '#fff' : '#7d8790', 'font-weight': u ? 700 : 400 }, lp, n); });
+R.forEach((n, i) => { const y = Y0 + i * DY; const u = used[n] || (n === 'GND' && i === 13);
+  el('circle', { cx: 250, cy: y, r: 3.6, fill: u ? '#ffd54a' : '#c9a227', stroke: u ? '#fff' : 'none' }, rp);
+  el('text', { x: 242, y: y + 3.5, 'font-size': 9, 'text-anchor': 'end', fill: u ? '#fff' : '#7d8790', 'font-weight': u ? 700 : 400 }, rp, n); });
+// ---------- sensor pins ----------
+const S = [['SCL',128],['SDA',156],['I2C_RST',184],['LPn',212],['INT',240],['GND',268],['AVDD+IOVDD+PWREN',296]];
+const sp = document.getElementById('senspins');
+S.forEach(([n, y]) => { el('circle', { cx: 510, cy: y - 40, r: 4, fill: '#c9a227' }, sp); el('text', { x: 520, y: y - 36, 'font-size': 10, fill: '#fff', 'font-weight': 700 }, sp, n); });
+// ---------- wires ----------
+const yR = n => Y0 + R.indexOf(n) * DY;
+const yRgnd = Y0 + 13 * DY;
+const W = [ ['D22', yR('D22'), 88, '#f2c200', 300],  ['D21', yR('D21'), 116, '#1a73e8', 330],
+            ['D19', yR('D19'), 144, '#c8c8c8', 360],  ['D18', yR('D18'), 172, '#1e9e4a', 390],
+            ['GND', yRgnd, 228, '#111', 420],          ['3V3', yR('3V3'), 256, '#d93025', 450] ];
+const wg = document.getElementById('wires');
+// INT -> D25 (left side): drawn first, routed under the board, so the other wires "hop" over it
+{ const y25 = Y0 + L.indexOf('D25') * DY;
+  const d = `M66,${y25} L48,${y25} L48,338 L480,338 L480,200 L506,200`;
+  el('path', { d, stroke: '#f57c00', 'stroke-width': 3.2, fill: 'none', 'stroke-linejoin': 'round' }, wg);
+  el('text', { x: 300, y: 350, 'font-size': 9, 'text-anchor': 'middle', fill: '#c96a2b' }, wg, 'INT → D25 (D23 pin was bent)'); }
+W.forEach(([n, y1, y2, col, lane]) => {
+  const d = `M254,${y1} L${lane},${y1} L${lane},${y2} L506,${y2}`;
+  if (col === '#c8c8c8') el('path', { d, stroke: '#777', 'stroke-width': 5, fill: 'none', 'stroke-linejoin': 'round' }, wg);
+  el('path', { d, stroke: col, 'stroke-width': 3.2, fill: 'none', 'stroke-linejoin': 'round' }, wg);
+});
+// little white gaps where GND / 3V3 cross over the orange INT wire
+[228, 256].forEach(y => { el('path', { d: `M474,${y} L486,${y}`, stroke: '#fff', 'stroke-width': 7 }, wg); });
+el('path', { d: 'M474,228 L486,228', stroke: '#111', 'stroke-width': 3.2 }, wg);
+el('path', { d: 'M474,256 L486,256', stroke: '#d93025', 'stroke-width': 3.2 }, wg);
+
+// ---------- I2C waveform: START, 0x29 = 0101001, W = 0, ACK = 0 ----------
+const svg = document.getElementById('i2c');
+const bits = [0,1,0,1,0,0,1,0,0], lbl = ['0','1','0','1','0','0','1','W','ACK'];
+const x0 = 40, bw = 30, hi1 = 18, lo1 = 42, hi2 = 68, lo2 = 92;
+el('text', { x: 2, y: 34, 'font-size': 10, 'font-weight': 700 }, svg, 'SCL');
+el('text', { x: 2, y: 84, 'font-size': 10, 'font-weight': 700 }, svg, 'SDA');
+let scl = `M10,${hi1} L${x0 + 6},${hi1} `;
+bits.forEach((b, i) => { const x = x0 + i * bw; scl += `L${x + 6},${lo1} L${x + 15},${lo1} L${x + 15},${hi1} L${x + 26},${hi1} L${x + 26},${lo1} L${x + 30},${lo1} `; });
+scl += `L${x0 + 9 * bw + 10},${lo1}`;
+el('path', { d: scl, stroke: '#f2a900', 'stroke-width': 2, fill: 'none' }, svg);
+let sda = `M10,${hi2} L${x0},${hi2} L${x0 + 3},${lo2} `; let level = 0;
+bits.forEach((b, i) => { const x = x0 + i * bw + 9; const y = b ? hi2 : lo2; sda += `L${x},${level ? hi2 : lo2} L${x + 2},${y} `; level = b; });
+sda += `L${x0 + 9 * bw + 10},${level ? hi2 : lo2}`;
+el('path', { d: sda, stroke: '#1a73e8', 'stroke-width': 2, fill: 'none' }, svg);
+bits.forEach((b, i) => { const x = x0 + i * bw + 20; el('text', { x, y: 112, 'font-size': lbl[i].length > 1 ? 8 : 10, 'text-anchor': 'middle', fill: i === 8 ? '#2e9a50' : (i === 7 ? '#c96a2b' : '#1d232a'), 'font-weight': 700 }, svg, lbl[i]); });
+el('text', { x: x0 - 2, y: 10, 'font-size': 8, fill: '#5a6570' }, svg, 'START');
+el('text', { x: x0 + 3.5 * bw + 20, y: 10, 'font-size': 8, 'text-anchor': 'middle', fill: '#5a6570' }, svg, 'address 0x29 (7 bits)');
+el('text', { x: x0 + 8 * bw + 20, y: 10, 'font-size': 8, 'text-anchor': 'middle', fill: '#2e9a50' }, svg, 'sensor');
+
+// ---------- power-up timeline ----------
+{
+  const T = document.getElementById('timing');
+  const X0 = 96, X1 = 712, H = 7;
+  const rows = [
+    ['3V3 (USB)', '#d93025', [[X0, 0], [110, 1]]],
+    ['PWREN', '#7a4fc4', [[X0, 0], [112, 1]]],
+    ['LPn · D18', '#1e9e4a', [[X0, 0], [178, 1]]],
+    ['I2C_RST · D19', '#888', [[X0, 0], [192, 1], [212, 0]]],
+    ['SDA / SCL', '#1a73e8', null],
+    ['INT · D25', '#f57c00', 'int'],
+  ];
+  const yOf = i => 16 + i * 25;
+  // dashed event lines
+  [[110, 'USB in'], [178, 'ESP32 booted (~0.3 s)'], [232, 'scan'], [270, 'firmware upload'], [488, 'start ranging']].forEach(([x, t], k) => {
+    el('line', { x1: x, y1: 4, x2: x, y2: 160, stroke: '#b7c0c8', 'stroke-dasharray': '3 3' }, T);
+    el('text', { x: x + 2, y: 176 + (k % 2) * 11, 'font-size': 8.5, fill: '#5a6570' }, T, t);
+  });
+  rows.forEach(([name, col, tr], i) => {
+    const y = yOf(i);
+    el('text', { x: 0, y: y + 4, 'font-size': 9.5, 'font-weight': 700, fill: '#1d232a' }, T, name);
+    if (tr === null) {   // bus activity blocks
+      el('line', { x1: X0, y1: y, x2: X1, y2: y, stroke: col, 'stroke-width': 1.2 }, T);
+      const blk = (a, b, lbl) => {
+        el('path', { d: `M${a},${y} L${a + 4},${y - H} L${b - 4},${y - H} L${b},${y} L${b - 4},${y + H} L${a + 4},${y + H} Z`, fill: '#dbe8fb', stroke: col, 'stroke-width': 1.2 }, T);
+        if (lbl) el('text', { x: (a + b) / 2, y: y + 3, 'font-size': 8, 'text-anchor': 'middle', fill: '#1d232a' }, T, lbl);
+      };
+      blk(222, 250, '0x29?');
+      blk(262, 478, '≈84 KB firmware upload · a few seconds');
+      blk(480, 500, '');
+      [530, 590, 650].forEach(x => blk(x + 6, x + 40, 'read'));
+      return;
+    }
+    if (tr === 'int') {
+      let d = `M${X0},${y - H} L520,${y - H}`;
+      [530, 590, 650].forEach(x => { d += ` L${x},${y - H} L${x},${y + H} L${x + 5},${y + H} L${x + 5},${y - H}`; });
+      d += ` L${X1},${y - H}`;
+      el('path', { d, stroke: col, 'stroke-width': 2, fill: 'none' }, T);
+      el('text', { x: 560, y: y - 10, 'font-size': 8, 'text-anchor': 'middle', fill: '#c96a2b' }, T, '← 66 ms →');
+      el('text', { x: 300, y: y + 3, 'font-size': 8, fill: '#5a6570' }, T, 'held HIGH by the pull-up; no frames yet');
+      return;
+    }
+    let d = '', lvl = tr[0][1];
+    d = `M${tr[0][0]},${lvl ? y - H : y + H}`;
+    tr.slice(1).forEach(([x, l]) => { d += ` L${x},${lvl ? y - H : y + H} L${x},${l ? y - H : y + H}`; lvl = l; });
+    d += ` L${X1},${lvl ? y - H : y + H}`;
+    el('path', { d, stroke: col, 'stroke-width': 2, fill: 'none' }, T);
+  });
+  el('text', { x: 196, y: yOf(3) - 10, 'font-size': 8, fill: '#5a6570' }, T, '10 ms pulse');
+}
+</script>
+</body>
+</html>
