@@ -136,7 +136,7 @@ const DATA = /*__DATA__*/null;
 const C = {
   board: '#c8bd99', boardEdge: '#b3a882', socket: '#2f3133', pin: '#c9b37a',
   esp: '#6f8299', espCan: '#b9bdc1', click: '#8ea38a', sim: '#ad8279', pcm: '#8e86a3', pam: '#9b9a72',
-  tp: '#7f98a7', boost: '#73998f', holder: '#47494c', cell: '#c9b48f', geo: '#ad8a68', geoTop: '#7a6450',
+  boost: '#73998f', holder: '#47494c', cell: '#c9b48f', geo: '#ad8a68', geoTop: '#7a6450',
   spk: '#8b8884', spkCone: '#5d5b58', rocker: '#55585b', cap: '#5b6670', capTop: '#9aa3ab', res: '#d6c7a6',
   term: '#6d8796', usb: '#9aa0a4', chip: '#3a3d40', bare: '#c3c7ca',
   base: '#e8e3d9', lid: '#ddd6ca', band: '#6f9894', slot: '#8a857c', collar: '#86a39f'
@@ -322,15 +322,12 @@ for (const [id, c] of Object.entries(DATA.comps)) {
   g.add(cyl(13.2, 1.4, '#e7e2d6', 55, 0, -30, 40));
   g.add(boxB(1.6, 2.5, 3, '#c9cdd0', 51, 33, -30)); g.add(boxB(1.6, 2.5, 3, '#c9cdd0', 59, 33, -30));
   const r = mesh(new THREE.CylinderGeometry(0.9, 0.9, 4.5, 12), C.res); r.rotation.z = Math.PI / 2; r.position.set(55, 35.6, -27.5); g.add(r); }
-/* ---- battery, TP4056, rocker, boost ---- */
+/* ---- battery, rocker, boost ---- */
 { const g = part('batt', 9, '18650 cell + holder', v(-6, 25, 36));
   g.add(boxB(77, 3, 21, C.holder, -6.5, 0, 35.5)); g.add(boxB(3, 20, 21, C.holder, -43.5, 0, 35.5)); g.add(boxB(3, 20, 21, C.holder, 30.5, 0, 35.5));
   g.add(boxB(77, 12, 1.6, C.holder, -6.5, 0, 25.8)); g.add(boxB(77, 12, 1.6, C.holder, -6.5, 0, 45.2));
   const cell = mesh(new THREE.CylinderGeometry(9.2, 9.2, 65, 32), C.cell); cell.rotation.z = Math.PI / 2; cell.position.set(-6.5, 11.5, 35.5); g.add(cell);
   const band = mesh(new THREE.CylinderGeometry(9.3, 9.3, 18, 32), '#7a9a96'); band.rotation.z = Math.PI / 2; band.position.set(-6.5, 11.5, 35.5); g.add(band); }
-{ const g = part('tp', 9, 'TP4056 USB-C charger', v(61, 14, 26));
-  g.add(boxB(28, 1.6, 17, C.tp, 61, 3, 26.5)); g.add(boxB(7.5, 3.2, 9, C.usb, 72.5, 4.6, 26.5, { metalness: 0.5, roughness: 0.4 }));
-  g.add(boxB(5, 1.2, 4, C.chip, 60, 4.6, 26.5)); [20.5, 24.5, 28.5, 32.5].forEach(z => g.add(cyl(0.9, 0.2, '#c9cdd0', 48.5, 4.6, z, 10))); }
 { const g = part('rocker', 9, 'Power rocker', v(76, 30, 7));
   g.add(boxB(20, 17, 12, C.rocker, 76, 6, 6.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 10.5, 4.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 17.5, 8.5));
   g.add(boxB(2.4, 21, 15, C.rocker, 89.2, 4, 6.5)); const pad = box(2.2, 16, 11, '#6a8f8b', 90.8, 14.5, 6.5); pad.rotation.z = 0.12; g.add(pad); }
@@ -361,13 +358,11 @@ const baseG = new THREE.Group(); scene.add(baseG);
   hook(-58.6, -20, 1, 0); hook(34.6, -6, -1, 0); hook(-12, -56.6, 0, 1); hook(-30, 16.6, 0, -1);
   [[-30, 23.9, 1], [17, 23.9, 1], [-30, 47.1, -1], [17, 47.1, -1]].forEach(([x, z, n]) => {
     baseG.add(regCase(boxB(8, 21.5, 1.6, '#d6d0c4', x, 0, z), caseMeshes)); baseG.add(regCase(boxB(8, 1.4, 2.6, '#c9c2b4', x, 20.1, z + n * 1.1), caseMeshes)); });
-  [17.2, 35.8].forEach(z => baseG.add(regCase(boxB(28, 5.5, 1.6, '#d6d0c4', 61, 0, z), caseMeshes)));
   baseG.add(regCase(boxB(38, 4, 1.4, '#d6d0c4', 8, 0, 49.3), caseMeshes)); baseG.add(regCase(boxB(38, 4, 1.4, '#d6d0c4', 8, 0, 67.7), caseMeshes));
   baseG.add(regCase(boxB(1.4, 4, 19.8, '#d6d0c4', -10.7, 0, 58.5), caseMeshes));
   const cup = mesh(new THREE.LatheGeometry([[15.6, 0], [19, 0], [19, 9], [15.6, 9]].map(p => new THREE.Vector2(p[0], p[1])), 64), '#d6d0c4', { side: THREE.DoubleSide });
   cup.position.set(55, 0, -30); baseG.add(regCase(cup, caseMeshes));
   [0, 120, 240].forEach(a => { const t = a * Math.PI / 180; const s = mesh(new THREE.CylinderGeometry(19.05, 19.05, 2.2, 12, 1, true, t, 0.55), C.slot, { side: THREE.DoubleSide }); s.position.set(55, 6.5, -30); baseG.add(regCase(s, caseMeshes)); });
-  const th = Math.asin(26.5 / 88); const port = box(2.2, 4.4, 10, '#55585b', 88 * Math.cos(th), 6.2, 26.5); port.rotation.y = -th; baseG.add(regCase(port, caseMeshes));
 }
 { const g = parts.geo.group;
   const col = mesh(new THREE.LatheGeometry([[12.8, 0], [15.2, 0], [15.2, 10], [12.8, 10]].map(p => new THREE.Vector2(p[0], p[1])), 48), C.collar, { side: THREE.DoubleSide }); col.position.set(55, 0, -30); g.add(col);
@@ -535,10 +530,10 @@ const steps = [
   { phase: 'Wiring', title: 'Battery sense, button & LED lines', view: 'board', st: ['solder'], focus: ['R1', 'R4', 'R5', 'esp', 'h1'], caseMode: 'ghost', lid: 'hidden', flip: true,
     lead: 'R4/R5 halve VBAT for GPIO1; R1 pulls GPIO7 up to 3V3; two links carry LED data and the button line to H1.',
     notes: ['R4 and R5 lie in the free area at the back right (rows D and F); R1 lies under the ESP32-S3 (sockets give 8 mm of clearance).'] },
-  { phase: 'Power', title: 'Battery → charger → switch', view: 'power', st: ['solder'], focus: ['batt', 'tp', 'rocker'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'Holder into the TP4056, its output through the rocker to the VBAT rail at X35, OUT− to the GND rail at AA35.',
+  { phase: 'Power', title: 'Battery → switch', view: 'power', st: ['solder'], focus: ['batt', 'rocker'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'Holder + lead to rocker pin 1, rocker pin 2 to the VBAT rail at X35, holder − lead straight to the GND rail at AA35.',
     notes: ['Battery <b>out of the holder</b> while soldering.', 'Push the rocker into the base cutout from outside first, then solder its pins. The lamp pin stays empty.', 'Rail-end holes (X35, AA35): push the tinned wire through from the top and solder it to the rail underneath.'],
-    warn: 'Load ground goes to <b>OUT−</b>, never to B−.' },
+    warn: 'No charger board in the device: charge the 18650 in an external charger and use a <b>protected</b> cell (nothing else stops over-discharge).' },
   { phase: 'Power', title: 'Boost converter to 5.0 V', view: 'boost', st: ['meter', 'solder'], focus: ['boost'], caseMode: 'ghost', lid: 'hidden',
     lead: 'Set the boost to 5.00 V first (input only, meter on the output), then wire it: IN from W35/AA34, OUT to Y1/AA1.',
     warn: 'Boost trimmers often start near maximum. Measure before the output touches the board.' },
@@ -550,13 +545,13 @@ const steps = [
   { phase: 'Lid', title: 'Lid harness & speaker leads', view: 'harness', st: ['cut', 'solder'], focus: ['h1', 'lidpcb', 'spk'], caseMode: 'ghost', lid: 'ghost',
     lead: 'Four shortened F-F jumpers from H1 to the lid header, two cut jumpers to the speaker. Lengths include 25 mm slack for lifting and twisting the lid.',
     notes: ['Shorten a jumper: cut the stated length out of the middle, strip 4 mm, twist, solder, heat-shrink.', 'Bundle the six wires with one cable tie at H1.'] },
-  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'tp', 'boost', 'sim', 'h2'], caseMode: 'ghost', lid: 'ghost',
+  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'boost', 'sim', 'h2'], caseMode: 'ghost', lid: 'ghost',
     lead: 'Test on the bench before anything goes into the case.',
     notes: ['<b>No battery, modules unplugged:</b> beep AA1–Y1 (GND–5V), AA1–X35 (GND–VBAT), K23–AA1 (3V3–GND): none may beep.', '<b>Beep each link</b> end to end with the list in hand.',
       '<b>Modules in, battery in, rocker on:</b> 5.0 V at Z19, 3.3 V at W3 and at J29 (H2), 3.7–4.2 V between L35 and L33 (SIM868 battery lead).', '<b>Flash:</b> rocker off, USB-C into the ESP32-S3.', 'Then: LED colours, button, voice line, PWRKEY pulse → SIM868 <b>NET</b> LED blinks fast, then slowly (about every 3 s = registered) → <span class="mono">AT</span> → <span class="mono">AT+CPIN?</span> → <span class="mono">AT+CREG?</span> (0,1) → call.'] },
   { phase: 'Case', title: 'Everything clicks into the base', view: 'base', st: ['hands'], all: true, focus: [], caseMode: 'solid', lid: 'hidden', calls: 'base',
     lead: 'No screws anywhere. Each part has a snap or twist feature printed into the base.',
-    notes: ['<b>Geophone:</b> into its collar, into the floor cup, turn 30° clockwise until it clicks.', '<b>Battery holder:</b> press down between the 4 tabs.', '<b>TP4056:</b> slide into the rails, USB-C into the wall port.', '<b>Boost:</b> press into its pocket.', '<b>SIM868 board:</b> antenna edge up, slide it down into the two cradle clips at the back wall; antenna flat against the wall at the back left.', '<b>Main board:</b> push down onto the 4 posts until all 4 hooks click.'] },
+    notes: ['<b>Geophone:</b> into its collar, into the floor cup, turn 30° clockwise until it clicks.', '<b>Battery holder:</b> press down between the 4 tabs.', '<b>Boost:</b> press into its pocket.', '<b>SIM868 board:</b> antenna edge up, slide it down into the two cradle clips at the back wall; antenna flat against the wall at the back left.', '<b>Main board:</b> push down onto the 4 posts until all 4 hooks click.'] },
   { phase: 'Case', title: 'Close the lid (twist-lock)', view: 'lid', st: ['hands'], all: true, focus: ['h1', 'spk', 'lidpcb', 'lidparts'], caseMode: 'solid', lid: 'glass', calls: 'lid',
     lead: 'Plug the harness onto H1, line up the marks, push down, twist.',
     notes: ['Harness: 5V plug on Z19 (left end of H1), then GND, LED, BTN; speaker plugs on Z23 (+) and Z24 (−).', 'Line up the teal marks, press down, turn 25° clockwise until the detent clicks. Open: turn back and lift.'] },
@@ -567,9 +562,9 @@ const steps = [
     notes: ['<b>Lid ↔ base:</b> 3-lug bayonet, 25° turn, detent bump; 0.4 mm clearance.', '<b>Button:</b> printed flexure tab presses the tact switch.', '<b>LED:</b> 0.6 mm skin over the pixel glows through.', '<b>Print:</b> PETG, 0.2 mm layers, 2.5 mm walls, flat side down, no supports.'] }
 ];
 const CALLS = {
-  base: [['Board snap hooks ×4', v(-58.6, 14, -20)], ['Geophone twist-lock cup', v(55, 40, -48)], ['Battery snap tabs', v(17, 24, 23.9)], ['TP4056 slide rails', v(61, 9, 17.2)], ['Boost pocket', v(-10.7, 7, 58.5)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)], ['USB-C charge port', v(84, 12, 26.5)]],
+  base: [['Board snap hooks ×4', v(-58.6, 14, -20)], ['Geophone twist-lock cup', v(55, 40, -48)], ['Battery snap tabs', v(17, 24, 23.9)], ['Boost pocket', v(-10.7, 7, 58.5)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)]],
   lid: [['Lugs ride in L-slots', v(44, 34, 76)], ['Turn 25° → click', v(-76, 34, 44)]],
-  closed: [['Twist-lock lid (25°)', v(76, 33, 44)], ['LED window', v(LED_X, 40, LED_Z)], ['Flexure button', v(BTN_X, 40, BTN_Z)], ['Speaker grille', v(-5, 40, 35)], ['USB-C charging', v(86, 8, 27)], ['Power rocker', v(91, 25, 6.5)], ['Feet ×3', v(0, -4, 62)]]
+  closed: [['Twist-lock lid (25°)', v(76, 33, 44)], ['LED window', v(LED_X, 40, LED_Z)], ['Flexure button', v(BTN_X, 40, BTN_Z)], ['Speaker grille', v(-5, 40, 35)], ['Power rocker', v(91, 25, 6.5)], ['Feet ×3', v(0, -4, 62)]]
 };
 
 /* ======================= state & apply ======================= */
