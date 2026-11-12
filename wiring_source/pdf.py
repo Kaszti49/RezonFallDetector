@@ -42,8 +42,8 @@ S, M = 15.5, 34
 FOOT = {  # module outlines in mm (x1, z1, x2, z2), label
     'esp': (-57.47, -52.05, 5.53, -26.05, 'ESP32-S3', '#6f8299'), 'click': (-56.5, -21.27, -13.6, 4.13, 'ADC 15 Click', '#8ea38a'),
     'pcm': (-10.57, -21.5, 9.43, 8.5, 'PCM5102A', '#8e86a3'), 'pam': (9.48, -13.22, 27.48, 8.78, 'PAM8403', '#9b9a72'),
-    'sim': (7.25, -51.82, 32.25, -28.82, 'SIM800L', '#ad8279')}
-PARTCOL = {'ESP32-S3': '#6f8299', 'Click': '#7f977b', 'PCM5102A': '#857c9c', 'SIM800L': '#a5776e', 'PAM8403': '#8f8e66', 'H1': '#4b4e51'}
+    'h2': (14.2, -32.6, 27.8, -27.7, 'H2', '#a5776e')}
+PARTCOL = {'ESP32-S3': '#6f8299', 'Click': '#7f977b', 'PCM5102A': '#857c9c', 'H2': '#a5776e', 'PAM8403': '#8f8e66', 'H1': '#4b4e51'}
 
 def svg_board(step=None, solder=True, highlight=None, comp_view=False):
     W = (COLS - 1) * S + 2 * M; H = (ROWS - 1) * S + 2 * M
@@ -156,8 +156,7 @@ STEPS = {
         ('K2 … K23', 'ESP32-S3 J1 socket, 22 contacts. K23 = J1-1 (3V3), K3 = J1-21 (5V), K2 = J1-22 (GND)'),
         ('N2 … N9', 'Click back header socket, 8 contacts. N9 = CS2, N8 = INT, N7–N3 = NC, N2 = GND'),
         ('W2 … W9', 'Click front header socket, 8 contacts. W9 = NC, W8 = RST, W7 = CS1, W6 = SCK, W5 = SDO, W4 = SDI, W3 = 3V3, W2 = GND'),
-        ('B28 … B33', 'SIM800L back row socket, 6 contacts (RING DTR MIC+ MIC− SPK+ SPK−, not wired)'),
-        ('J28 … J33', 'SIM800L front row socket, 6 contacts: J28 NET, J29 VCC, J30 RST, J31 RXD, J32 TXD, J33 GND'),
+        ('J29 … J33', 'H2 SIM868 header, 5 male pins pointing up: J29 3V3, J30 PWRKEY, J31 SIM RXD, J32 SIM TXD, J33 GND (the SIM868 board itself is off the perfboard, at the back wall)'),
         ('N20 … N25', 'PCM5102A: its own male header soldered straight into the board. N20 VIN, N21 GND, N22 LCK, N23 DIN, N24 BCK, N25 SCK'),
         ('Q28 … Q32', 'PAM8403 input/power pins (male header pins, module 2 mm above the board): Q28 L in, Q29 ⏚ in, Q30 R in, Q31 +5V, Q32 GND'),
         ('Y28 Y29 Y31 Y32', 'PAM8403 output pins: Y28 L+, Y29 L−, Y31 R−, Y32 R+'),
@@ -166,8 +165,16 @@ STEPS = {
     5: ('ADC 15 Click ↔ ESP32-S3 (SPI)', ['solder'], 'Seven links on the solder side. Six run straight in one column and pass the Click’s unused NC pins (N3–N7, W9): keep the insulation intact there.', []),
     6: ('Geophone → Click CH1', ['solder', 'screw'], 'Solder the 1 kΩ resistor across the two SM-24 solder tabs. Twist two cores of the 6×0.22 cable (about 1 turn per cm), solder to the tabs (mark the + core). Screw-terminal ends: strip 5 mm, twist, tin lightly. Each terminal takes at most two conductors.', []),
     7: ('Audio: I²S, DAC → amp → H1', ['solder'], 'Before wiring, set the PCM5102A back-side jumpers: 1 FLT = L, 2 DEMP = L, 3 XSMT = H, 4 FMT = L. The two DAC → amp wires run on the component side, pad to pad on top of the modules.', []),
-    8: ('SIM800L: capacitors, power, UART', ['solder'], 'Insert C1, C2, R2 and R3 from the component side into the listed holes, then on the solder side bend each listed leg onto its neighbour pin (bridge) and solder. Then the four links. Insert the SIM card (PIN off, nano in the adapter) before plugging the SIM800L in.', []),
-    9: ('Battery sense, button & LED lines', ['solder'], 'R4, R5 (under the SIM800L) and R1 (under the ESP32-S3) go in from the component side; bridges and links on the solder side.', []),
+    8: ('SIM868: power leads, UART, jumpers', ['solder', 'cut'], 'The Waveshare Pico-SIM868 board is used as a modem only: pull the Pico H off it, it is not used. Fit C1, then the four links on the solder side to H2. Then the two 0.5 mm² power leads from L35/L33 (top side) to a PH2.0 plug for the board’s battery socket, and five M-F jumpers from H2 into the board’s Pico sockets. Before power-on: GSM antenna on the “GSM” u.FL socket, nano SIM (PIN off) in the slot, the board’s power slide switch on the battery side.', [
+        ('pin 1 (GP0)', 'SIM868 RXD, through the board’s own 3.3 V ↔ 2.8 V level shifter. From H2 J31 ← GPIO17 (ESP TX). No divider needed.'),
+        ('pin 2 (GP1)', 'SIM868 TXD. To H2 J32 → GPIO18 (ESP RX).'),
+        ('pin 3', 'GND. From H2 J33 (GND bus col 33).'),
+        ('pin 19 (GP14)', 'PWR_EN: drives an NPN on the SIM868 PWRKEY. HIGH for 1.5 s switches the module on (or off). From H2 J30 ← GPIO16.'),
+        ('pin 36 (3V3 OUT)', 'Powers the board’s level shifter, microphone and RTC backup. From H2 J29 ← ESP32 3V3. Without it the UART stays dead.'),
+        ('pin 39, pin 40', 'VSYS, VBUS: leave EMPTY. Never 5 V into this board.'),
+        ('BAT (PH2.0)', 'Battery socket → SIM868 VBAT (3.4–4.4 V, 2 A bursts). Red lead from L35 (VBAT rail), black from L33 (GND bus). Check polarity against the plug of the Li-po in the box.'),
+        ('GSM (u.FL)', 'GSM antenna, stuck flat to the inner wall at the back left. GNSS and BT sockets stay empty.')]),
+    9: ('Battery sense, button & LED lines', ['solder'], 'R4, R5 (free area at the back right, rows D and F) and R1 (under the ESP32-S3) go in from the component side; bridges and links on the solder side.', []),
     10: ('Battery → charger → switch', ['solder'], 'Battery out of the holder. Push the rocker into the base’s wall cutout from outside first, then solder its two pins (lamp pin unused). Rail-end holes: tin the 0.5 mm² wire, push it through the hole from the component side and solder it to the rail underneath.', []),
     11: ('Boost converter to 5.0 V', ['meter', 'solder'], 'Before connecting the output: power the boost input from the battery, turn its trimmer until the output reads 5.00 V (±0.05 V). Then wire it.', []),
     12: ('Lid board: button, LED, diode', ['solder', 'cut'], 'Lid board, component side up: fit the parts into the listed holes, then turn it over and make the links. The header pins are bent 90° outward over the edge after soldering.', []),
@@ -177,8 +184,8 @@ LIDPARTS = [('C1 D1 E1 F1', 'Lid header, 4 straight pins (C1 5V, D1 GND, E1 DIN,
             ('C3 C6 E3 E6', 'Tact switch legs (C3 + C6 are joined inside, E3 + E6 are joined inside)'),
             ('A5 → A9', '1N4001: anode A5, cathode (stripe) A9'),
             ('C10 E10 G10', 'WS2812B single pixel: stubs (resistor-leg offcuts) from its +5V, DIN, GND pads into C10, E10, G10')]
-ORDER = {'bus': 0, 'bridge': 2, 'link': 3, 'lid': 3, 'top': 4, 'pair': 1, 'lead': 1, 'w05': 2, 'ff': 1, 'ffcut': 2}
-KINDNAME = {'bus': 'Bare wire', 'bridge': 'Bridge', 'link': 'Link', 'lid': 'Link', 'top': 'Top wire', 'pair': 'Pair', 'lead': 'Lead', 'w05': '0.5 mm²', 'ff': 'Jumper', 'ffcut': 'Jumper'}
+ORDER = {'bus': 0, 'bridge': 2, 'link': 3, 'lid': 3, 'top': 4, 'pair': 1, 'lead': 1, 'w05': 4, 'ff': 1, 'ffcut': 2, 'mf': 5}
+KINDNAME = {'bus': 'Bare wire', 'bridge': 'Bridge', 'link': 'Link', 'lid': 'Link', 'top': 'Top wire', 'pair': 'Pair', 'lead': 'Lead', 'w05': '0.5 mm²', 'ff': 'Jumper', 'ffcut': 'Jumper', 'mf': 'Jumper'}
 
 def end_cell(w, which):
     h = w[which]
@@ -256,7 +263,7 @@ table.chk td { border-bottom: 1px solid #e0dbd2; padding: 2.5px 4px; }
 o = [f'<!doctype html><html><head><meta charset="utf-8"><title>Rezon Wiring List</title><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet"><style>{css}</style></head><body>']
 # ---- page 1
 n_link = sum(1 for w in WIRES if w['kind'] in ('link', 'lid'))
-o.append('<h1><b>REZON</b> fall detector · wiring list</h1><div class="sub">SM-24 geophone · ADC 15 Click · ESP32-S3 · PCM5102A + PAM8403 · SIM800L · 18650 · hackathon build · 2026-11-10 · same numbering as the 3D guide (Rezon_Wiring_Guide.html)</div>')
+o.append('<h1><b>REZON</b> fall detector · wiring list</h1><div class="sub">SM-24 geophone · ADC 15 Click · ESP32-S3 · PCM5102A + PAM8403 · SIM868 (Waveshare) · 18650 · hackathon build · 2026-11-12 · same numbering as the 3D guide (Rezon_Wiring_Guide.html)</div>')
 o.append('<div class="grid2" style="margin-top:10px"><div class="box"><h3>How to read a hole</h3><ul>'
          '<li>Main board: <b>rows A … Z, AA</b> (27) from the back edge to the front edge; <b>columns 1 … 35</b> from left to right, <b>seen from the component side</b> with the rails and H1 at the front.</li>'
          '<li><span class="h">K6</span> = row K, column 6. Lid board: rows A–H, columns 1–12, same rule.</li>'
@@ -270,19 +277,19 @@ o.append('<div class="grid2" style="margin-top:10px"><div class="box"><h3>How to
          '<li>Two wires may cross (insulated); a link never runs along a bare rail.</li></ul></div></div>')
 o.append('<div class="box" style="margin-top:8px"><h3>Colours used in this list</h3>' + ''.join(f'<span class="leg"><i style="background:{c}"></i>{n}</span>' for n, c in [('GND', NC['gnd']), ('5 V', NC['v5']), ('VBAT', NC['vbat']), ('3V3', NC['v33']), ('SPI', NC['spi']), ('I²S', NC['i2s']), ('UART', NC['uart']), ('Speaker', NC['audio']), ('LED/button', NC['io']), ('Battery sense', NC['sense']), ('Bare wire', '#a9aeb2')]) + '<div class="sub" style="margin-top:3px">Colours are for reading the list. The insulated cores can be any colour; label both ends with tape if they are all the same.</div></div>')
 o.append('<h3>Board layout · component side</h3><div class="map">' + svg_board(None, solder=False, comp_view=True) + '</div>')
-o.append('<div class="warn"><b>Check your modules first.</b> The ESP32-S3 rows must be 9 holes apart (B and K), the Click rows 9 apart (N and W), the SIM800L rows 8 apart (B and J). If one of yours differs, shift that module’s second row and every hole that refers to it. Firmware pin map: SCK 12, MISO 13, MOSI 14, ADC-CS 11, clock-CS 9, DRDY 10, ADC-RST 8, I²S BCK 4 / LCK 5 / DIN 6, SIM TX→GPIO18, GPIO17→SIM RX, SIM RST 16, button 7, LED 15, VBAT/2 on GPIO1.</div>')
+o.append('<div class="warn"><b>Check your modules first.</b> The ESP32-S3 rows must be 9 holes apart (B and K), the Click rows 9 apart (N and W). If one of yours differs, shift that module’s second row and every hole that refers to it. Firmware pin map: SCK 12, MISO 13, MOSI 14, ADC-CS 11, clock-CS 9, DRDY 10, ADC-RST 8, I²S BCK 4 / LCK 5 / DIN 6, SIM868 TXD→GPIO18, GPIO17→SIM868 RXD, SIM868 PWRKEY 16 (HIGH 1.5 s), button 7, LED 15, VBAT/2 on GPIO1.</div>')
 
 # ---- pinout reference page
 o.append('<div class="page"></div><h2><span class="num">REF</span>Every pin hole on the main board</h2><p class="intro">Use this to check a hole before soldering. Pins are listed per module, left to right on the component side.</p>')
 by = {}
 for h, (part, lab) in PINS.items(): by.setdefault(part, []).append((parse(h)[1], parse(h)[0], h, lab))
 cells = []
-for part in ['ESP32-S3', 'Click', 'PCM5102A', 'SIM800L', 'PAM8403', 'H1']:
+for part in ['ESP32-S3', 'Click', 'PCM5102A', 'H2', 'PAM8403', 'H1']:
     lst = sorted(by[part])
     cells.append(f'<div class="box"><h3>{part}</h3><table class="holes">' + ''.join(f'<tr><td style="width:44px"><span class="h">{h}</span></td><td>{esc(l)}</td></tr>' for _, _, h, l in lst) + '</table></div>')
 cells.append('<div class="box"><h3>Parts on the main board</h3><table class="holes">' + ''.join(f'<tr><td style="width:44px"><b>{k}</b></td><td>{esc(c["val"])} · ' + ', '.join(f'<span class="h">{h}</span>{"" if l in "ab" else " " + esc(l)}' for h, l in c['legs'].items()) + f' · step {c["step"] + 1}</td></tr>' for k, c in COMPS.items()) + '</table></div>')
 cells.append('<div class="box"><h3>Bare rails and buses</h3><table class="holes"><tr><td><span class="h">AA1–AA35</span></td><td>GND rail</td></tr><tr><td><span class="h">Y1–Y20</span></td><td>5 V rail</td></tr><tr><td><span class="h">D35–X35</span></td><td>VBAT rail (switched battery)</td></tr><tr><td><span class="h">B2–W2</span></td><td>GND bus col 2</td></tr><tr><td><span class="h">F33–AA33</span></td><td>GND bus col 33</td></tr></table>'
-             '<h3 style="margin-top:8px">Off-board wires land in</h3><table class="holes"><tr><td><span class="h">X35</span></td><td>VBAT from rocker pin 2</td></tr><tr><td><span class="h">W35</span></td><td>VBAT to boost IN+</td></tr><tr><td><span class="h">AA35</span></td><td>GND from TP4056 OUT−</td></tr><tr><td><span class="h">AA34</span></td><td>GND to boost IN−</td></tr><tr><td><span class="h">Y1</span></td><td>5 V from boost OUT+</td></tr><tr><td><span class="h">AA1</span></td><td>GND from boost OUT−</td></tr><tr><td><span class="h">AA18 AA19</span></td><td>GND wires up to the Click screw terminals</td></tr></table></div>')
+             '<h3 style="margin-top:8px">Off-board wires land in</h3><table class="holes"><tr><td><span class="h">X35</span></td><td>VBAT from rocker pin 2</td></tr><tr><td><span class="h">W35</span></td><td>VBAT to boost IN+</td></tr><tr><td><span class="h">AA35</span></td><td>GND from TP4056 OUT−</td></tr><tr><td><span class="h">AA34</span></td><td>GND to boost IN−</td></tr><tr><td><span class="h">Y1</span></td><td>5 V from boost OUT+</td></tr><tr><td><span class="h">AA1</span></td><td>GND from boost OUT−</td></tr><tr><td><span class="h">AA18 AA19</span></td><td>GND wires up to the Click screw terminals</td></tr><tr><td><span class="h">L35</span></td><td>VBAT to the SIM868 battery plug (red)</td></tr><tr><td><span class="h">L33</span></td><td>GND to the SIM868 battery plug (black)</td></tr></table></div>')
 o.append('<div class="grid2">' + ''.join(cells) + '</div>')
 
 # ---- steps
@@ -291,13 +298,16 @@ for st in range(2, 14):
     o.append(f'<div class="page"></div><h2><span class="num">STEP {st}</span>{esc(title)}</h2>')
     o.append('<div class="tools">' + ''.join(f'<span class="{t}">{TOOLS[t]}</span>' for t in tools) + '</div>')
     o.append(f'<p class="intro">{esc(intro)}</p>')
-    if holes: o.append('<h3>Holes</h3>' + holes_table(holes))
+    if holes: o.append(('<h3>SIM868 board: what goes where</h3>' if st == 8 else '<h3>Holes</h3>') + holes_table(holes))
     if st == 12: o.append('<h3>Parts into holes (component side)</h3>' + holes_table(LIDPARTS))
     t = ops_table(st)
     if t: o.append('<h3>Do these in order</h3>' + t)
     if st == 3: o.append('<div class="map">' + svg_board(None, solder=False, comp_view=True) + '</div>')
-    elif st in (4, 5, 7, 8, 9):
+    elif st in (4, 5, 7, 9):
         o.append('<div class="map">' + svg_board(st - 1, solder=True) + '</div>')
+    elif st == 8:
+        o.append('<div class="map">' + svg_board(st - 1, solder=True) + '</div>')
+        o.append('<div class="map">' + svg_board(st - 1, solder=False, comp_view=True, highlight=['L35', 'L33', 'J29', 'J30', 'J31', 'J32', 'J33']) + '</div>')
     elif st == 6: o.append('<div class="map">' + svg_board(st - 1, solder=False, comp_view=True, highlight=['AA18', 'AA19']) + '</div>')
     elif st in (10, 11): o.append('<div class="map">' + svg_board(st - 1, solder=False, comp_view=True, highlight=['X35', 'W35', 'AA35', 'AA34', 'Y1', 'AA1'] if st == 11 else ['X35', 'AA35']) + '</div>')
     elif st == 12: o.append('<div class="map" style="text-align:center">' + svg_lid(True) + '</div>')
@@ -305,13 +315,13 @@ for st in range(2, 14):
 
 # ---- check sheet
 o.append('<div class="page"></div><h2><span class="num">STEP 14</span>Check sheet</h2><p class="intro">Battery out, all modules unplugged. Beep each pair with the meter. Tick when done.</p>')
-o.append('<h3>Must NOT beep (shorts)</h3><table class="chk">' + ''.join(f'<tr><td><span class="cb"></span></td><td><span class="h">{a}</span> ↔ <span class="h">{b}</span></td><td>{esc(t)}</td></tr>' for a, b, t in [('AA1', 'Y1', 'GND ↔ 5 V'), ('AA1', 'X35', 'GND ↔ VBAT'), ('AA1', 'K23', 'GND ↔ 3V3'), ('Y1', 'X35', '5 V ↔ VBAT'), ('Y1', 'J29', '5 V ↔ SIM VCC (would destroy the SIM800L)'), ('Y28', 'AA1', 'PAM L+ ↔ GND'), ('Y29', 'AA1', 'PAM L− ↔ GND')]) + '</table>')
+o.append('<h3>Must NOT beep (shorts)</h3><table class="chk">' + ''.join(f'<tr><td><span class="cb"></span></td><td><span class="h">{a}</span> ↔ <span class="h">{b}</span></td><td>{esc(t)}</td></tr>' for a, b, t in [('AA1', 'Y1', 'GND ↔ 5 V'), ('AA1', 'X35', 'GND ↔ VBAT'), ('AA1', 'K23', 'GND ↔ 3V3'), ('Y1', 'X35', '5 V ↔ VBAT'), ('Y1', 'L35', '5 V ↔ SIM868 VBAT lead (would destroy the SIM868)'), ('Y1', 'J29', '5 V ↔ H2 3V3'), ('L35', 'J29', 'VBAT ↔ H2 3V3'), ('Y28', 'AA1', 'PAM L+ ↔ GND'), ('Y29', 'AA1', 'PAM L− ↔ GND')]) + '</table>')
 o.append('<h3>Must beep (every link, end to end)</h3><table class="chk">')
 for w in WIRES:
     if w['kind'] in ('link', 'lid', 'bridge'):
         o.append(f'<tr><td><span class="cb"></span></td><td style="width:120px"><span class="h">{w["a"]}</span> ↔ <span class="h">{w["b"]}</span>{" (lid)" if w["side"] == "lid" else ""}</td><td>{esc(w.get("note") or "")}</td><td class="sub">step {w["step"] + 1}</td></tr>')
 o.append('</table>')
-o.append('<h3>Then, modules plugged in, battery in, rocker ON</h3><table class="chk">' + ''.join(f'<tr><td><span class="cb"></span></td><td>{t}</td></tr>' for t in ['5.0 V between Z19 and Z20 (H1 5V–GND)', '3.3 V between W3 and W2 (Click 3V3–GND)', '3.7–4.2 V between J29 and J33 (SIM VCC–GND)', 'Rocker OFF before plugging USB-C into the ESP32-S3 to flash']) + '</table>')
+o.append('<h3>Then, modules plugged in, battery in, rocker ON</h3><table class="chk">' + ''.join(f'<tr><td><span class="cb"></span></td><td>{t}</td></tr>' for t in ['5.0 V between Z19 and Z20 (H1 5V–GND)', '3.3 V between W3 and W2 (Click 3V3–GND)', '3.3 V between J29 and J33 (H2 3V3–GND)', '3.7–4.2 V between L35 and L33 (SIM868 battery lead) and the same on the PH2.0 plug, red = +', 'SIM868: PWRKEY pulse → NET LED blinks fast, then about every 3 s (registered); AT → AT+CPIN? → AT+CREG? (0,1) → test call', 'Rocker OFF before plugging USB-C into the ESP32-S3 to flash']) + '</table>')
 
 # ---- cut list
 o.append('<div class="page"></div><h2><span class="num">CUT</span>Cut list (every wire cut to length)</h2><table class="ops"><thead><tr><th>Step</th><th>Type</th><th>From</th><th>To</th><th>Length</th><th>Instruction</th></tr></thead><tbody>')

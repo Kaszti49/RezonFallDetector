@@ -227,3 +227,24 @@ All lines fit. **VO-03 is tight** (≈6.6 s in a 7 s slot) → read at a normal 
 - **Render time:** full-frame `feTurbulence` grain on every layer is expensive. Mitigation: bake the code-generated textures to PNG once and reuse them (still deterministic, no AI images).
 - **Font fetched from Google at render time:** before the final render, switch to a local copy of Rubik (SIL OFL, redistribution allowed) so an offline or failed fetch cannot break the render.
 - **Black first frame:** S01 opens black, so an upload thumbnail would be black. Fine for a form upload; flag if the platform shows thumbnails.
+
+## Hardware: SIM800L → SIM868 (2026-11-12)
+
+- New modem on hand: **Waveshare Pico-SIM868-GSM/GPRS/GNSS** board (photo `uploads/NewSIM.jpg`), shipped with a Pico H, a 600 mAh Li-po, a speaker and a male header strip.
+- The black part in the photo is the **speaker**, not an antenna. All three u.FL sockets (GNSS, GSM, BT) are empty: the GSM antenna is mandatory and must come from the box or be bought.
+- Decision (pending Kaszti's OK): keep the ESP32-S3 and use the SIM868 board as a modem only. The Pico H comes off. 5 M-F jumpers go from H2 (J29–J33) into the board's Pico sockets: pin 1 RXD ← GPIO17, pin 2 TXD → GPIO18, pin 3 GND, pin 19 PWRKEY ← GPIO16 (HIGH 1.5 s), pin 36 3V3 ← ESP32 3V3. Power comes from the 18650 (L35/L33) into the board's PH2.0 battery socket, with the board's switch on battery.
+- Verified from Waveshare's schematic and demo code: UART0 GP0/GP1, PWR_EN GP14 drives an NPN on PWRKEY, and a TXB0104 level shifter on 3V3 (pin 36). Its VBUS/VSYS circuitry stays unused.
+- Dropped: SIM800L sockets, the R2/R3 divider, C2 and the nano→micro adapter. C1 (1000 µF) stays at the take-off.
+- The board (76 × 24 mm) stands on edge in a printed cradle at the back wall, with the antenna edge up and the GSM antenna stuck on the wall at the back left. The printed base needs the two cradle clips added.
+- To buy: a PH2.0 2-pin plug with leads (not in Hestore stock), plus a u.FL GSM antenna if the box has none.
+- Regenerated `Rezon_Wiring_Guide.html` and `Rezon_Wiring_List.pdf` (`wiring_source/`), plus `Rezon_Hackathon_Parts_List_SM24.pdf` and `Hackathon_shopping_list_SM24.csv` (new source: `parts_source/parts.py`).
+- 2G in Hungary: still on air. Telekom's 2G moved onto Yettel's network in 2026, and a switch-off around 2030 has been reported.
+
+### SIM868 call test on the practice ESP32 (2026-11-12)
+- Kaszti asked to test a single call now. Sketch: `practice/sim868_call_test/sim868_call_test.ino` (classic ESP32 DevKit V1, the practice board).
+- Practice pins differ from the final S3 map on purpose: TX D25 → board pin 1, RX D26 ← pin 2, PWRKEY D27 → pin 19, 3V3 → pin 36, GND → pin 3. D16/D17 are taken by the geophone-test Click wiring, so that wiring can stay in place.
+- Power for the test: the 600 mAh Li-po that came in the box (already on the board's battery socket), so no PH2.0 plug is needed yet.
+- Blocker to check: the GSM antenna (none in the photo).
+- Result (2026-11-12): first outgoing call placed from the practice rig. Fixes on the way: D26/D27 jumpers were swapped (D26 sat in pin 19, D27 in pin 2), D25 needed reseating in hole 1. Modem at 115200, signal CSQ 30–31, registered on "vodafone", battery 3.99 V. The SIM still has its PIN on: it was unlocked for the session with AT+CPIN, so after every power-up it asks again. For the finished device, switch the PIN off in a phone.
+- Diagnostic sketch: `practice/sim868_diag/sim868_diag.ino` (tries both RX/TX orders and 5 bauds, reads idle line levels, pulses PWRKEY only when SIM TXD is low = modem off).
+- Incoming call (2026-11-12): Kaszti's phone called Rezon. Caller ID showed (+CLIP), answered with ATA on the 2nd RING, connected ~65 s until the caller hung up (NO CARRIER). Speaker from the Waveshare box on the board, AT+CLVL=100, AT+CMIC=0,10. Both directions work.

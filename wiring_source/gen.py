@@ -40,8 +40,7 @@ add_row('ESP32-S3', 'B', range(23, 1, -1), J3)
 add_row('Click', 'N', range(9, 1, -1), ['CS2', 'INT (DRDY)', 'NC', 'NC', 'NC', 'NC', 'NC', 'GND'])
 add_row('Click', 'W', range(9, 1, -1), ['NC', 'RST', 'CS1', 'SCK', 'SDO (MISO)', 'SDI (MOSI)', '3V3', 'GND'])
 add_row('PCM5102A', 'N', range(20, 26), ['VIN', 'GND', 'LCK', 'DIN', 'BCK', 'SCK'])
-add_row('SIM800L', 'J', range(28, 34), ['NET', 'VCC', 'RST', 'RXD', 'TXD', 'GND'])
-add_row('SIM800L', 'B', range(28, 34), ['RING', 'DTR', 'MIC+', 'MIC−', 'SPK+', 'SPK−'])
+add_row('H2', 'J', range(29, 34), ['3V3 → SIM868 pin 36', 'PWRKEY → SIM868 pin 19', 'SIM RXD → SIM868 pin 1', 'SIM TXD → SIM868 pin 2', 'GND → SIM868 pin 3'])
 add_row('PAM8403', 'Q', [28, 29, 30, 31, 32], ['L in', '⏚ in', 'R in', '+5V', 'GND'])
 add_row('PAM8403', 'Y', [28, 29, 31, 32], ['L+ out', 'L− out', 'R− out', 'R+ out'])
 add_row('H1', 'Z', range(19, 25), ['5V', 'GND', 'LED', 'BTN', 'SPK+', 'SPK−'])
@@ -49,15 +48,12 @@ add_row('H1', 'Z', range(19, 25), ['5V', 'GND', 'LED', 'BTN', 'SPK+', 'SPK−'])
 # components: id -> (label, legs{hole: leg label}, value)
 comps = {
     'C3': ('470 µF', {'Y15': '+', 'AA15': '−'}, 'electrolytic, stripe = −'),
-    'C1': ('1000 µF', {'M35': '+', 'M33': '−'}, 'electrolytic, stripe = −'),
-    'C2': ('100 nF', {'K29': 'a', 'K33': 'b'}, 'ceramic'),
+    'C1': ('1000 µF', {'M35': '+', 'M33': '−'}, 'electrolytic, stripe = −, burst reserve at the SIM868 power take-off'),
     'R1': ('10 kΩ', {'J17': 'a', 'J22': 'b'}, 'button pull-up'),
-    'R2': ('10 kΩ', {'J14': 'a', 'J9': 'b'}, 'SIM RX divider, top'),
-    'R3': ('20 kΩ', {'I9': 'a', 'I3': 'b'}, 'SIM RX divider, bottom'),
     'R4': ('100 kΩ', {'D34': 'a', 'D29': 'b'}, 'battery divider, top'),
     'R5': ('100 kΩ', {'F29': 'a', 'F34': 'b'}, 'battery divider, bottom'),
 }
-comp_step = {'C3': 3, 'C1': 7, 'C2': 7, 'R2': 7, 'R3': 7, 'R1': 8, 'R4': 8, 'R5': 8}
+comp_step = {'C3': 3, 'C1': 7, 'R1': 8, 'R4': 8, 'R5': 8}
 
 def describe(h):
     if h in pins: return f"{pins[h][0]} {pins[h][1]}"
@@ -70,7 +66,7 @@ buses = [  # id, step, net, holes (start, end), label
     ('GND rail', 3, 'gnd', 'AA1', 'AA35', 'GND rail (bare wire along row AA)'),
     ('5V rail', 3, 'v5', 'Y1', 'Y20', '5 V rail (bare wire along row Y)'),
     ('GND bus col 2', 3, 'gnd', 'B2', 'W2', 'GND bus col 2: ESP32 GND ↔ Click GND (bare)'),
-    ('GND bus col 33', 3, 'gnd', 'F33', 'AA33', 'GND bus col 33: SIM GND, C1−, PAM GND → rail (bare)'),
+    ('GND bus col 33', 3, 'gnd', 'F33', 'AA33', 'GND bus col 33: H2 GND, C1−, SIM868 GND lead, PAM GND → rail (bare)'),
     ('VBAT rail', 3, 'vbat', 'D35', 'X35', 'VBAT rail (bare wire along col 35)'),
 ]
 def line(a, b):
@@ -80,8 +76,6 @@ def line(a, b):
 
 bridges = [  # step, a, b, note
     (3, 'Z19', 'Y19', 'H1 5V → 5 V rail'), (3, 'Z20', 'AA20', 'H1 GND → GND rail'), (3, 'Q32', 'Q33', 'PAM8403 GND → GND bus'),
-    (7, 'K29', 'J29', 'C2 leg → SIM VCC'), (7, 'J14', 'K14', 'R2 leg → GPIO17'), (7, 'I9', 'J9', 'R3 leg → R2 leg (divider node)'),
-    (7, 'I3', 'I2', 'R3 leg → GND bus col 2'),
     (8, 'J17', 'K17', 'R1 leg → GPIO7'), (8, 'J22', 'K22', 'R1 leg → 3V3 (J1-2)'), (8, 'D34', 'D35', 'R4 leg → VBAT rail'), (8, 'F34', 'F33', 'R5 leg → GND bus col 33'),
 ]
 
@@ -100,10 +94,10 @@ links = [  # step, from, to, net, note
     (6, 'K20', 'N24', 'i2s', 'bit clock'), (6, 'K19', 'N22', 'i2s', 'word clock'), (6, 'K18', 'N23', 'i2s', 'data'),
     (6, 'N25', 'AA25', 'gnd', 'SCK → GND rail (SCK must be grounded)'),
     (6, 'Y28', 'Z23', 'audio', 'speaker +'), (6, 'Y29', 'Z24', 'audio', 'speaker −, NOT ground'),
-    (7, 'K35', 'J29', 'vbat', 'VBAT → SIM VCC'),
-    (7, 'J32', 'K13', 'uart', 'SIM TXD → ESP RX'),
-    (7, 'J9', 'J31', 'uart', 'divider node → SIM RXD'),
-    (7, 'K15', 'J30', 'uart', 'SIM reset'),
+    (7, 'K23', 'J29', 'v33', 'ESP32 3V3 (J1-1) → H2 3V3 (feeds the SIM868 level shifter)'),
+    (7, 'K15', 'J30', 'uart', 'GPIO16 → H2 PWRKEY (HIGH 1.5 s = power on/off)'),
+    (7, 'K14', 'J31', 'uart', 'GPIO17 (ESP TX) → H2 SIM RXD'),
+    (7, 'J32', 'K13', 'uart', 'H2 SIM TXD → GPIO18 (ESP RX)'),
     (8, 'D29', 'F29', 'sense', 'divider node R4–R5'),
     (8, 'F29', 'B20', 'sense', 'VBAT ÷ 2 → GPIO1'),
     (8, 'K17', 'Z22', 'io', 'button line'),
@@ -242,6 +236,25 @@ pl = [-2.5, 11.7, -3.5]; pa = [0, 11.7, -3.5]
 qx28, qz28 = hxz('Q28'); qx29, qz29 = hxz('Q29')
 off(6, 'top', 'audio', 'PCM5102A pad L (top)', 'PAM8403 pad L in (top, above Q28)', [pl, [-2.5, 13.4, -3.5], [qx28, 13.4, -3.5], [qx28, 11.6, qz28]])
 off(6, 'top', 'gnd', 'PCM5102A pad AGND (top)', 'PAM8403 pad ⏚ in (top, above Q29)', [pa, [0, 12.6, -2.6], [qx29, 12.6, -2.6], [qx29, 11.6, qz29]])
+# SIM868 (step 7): Waveshare Pico-SIM868 board standing on its long edge in a cradle at the back wall,
+# component side facing the main board, antenna edge (header pins 1-20) up. Pico NOT fitted.
+SIMZ, SIMY0, SIMY1 = -68.0, 9.0, 33.0           # front face of the SIM868 PCB, bottom / top edge
+ROWT, ROWB = 29.9, 12.1                        # socket rows: pins 1-20 (top), pins 21-40 (bottom)
+SOCK = SIMZ + 8.5                              # front face of its female sockets
+def simpin(n):
+    return ([34.4 - (n - 1) * 2.54, ROWT, SOCK] if n <= 20 else [34.4 - (40 - n) * 2.54, ROWB, SOCK])
+BATX, BATY = 16.0, 24.0                        # PH2.0 battery socket on the SIM868 board (under the missing Pico)
+xL35, zL35 = hxz('L35'); xL33, zL33 = hxz('L33')
+off(7, 'w05', 'vbat', 'L35 (VBAT rail, next to C1+)', 'SIM868 battery socket + (PH2.0 plug, red lead)',
+    [[xL35, YB, zL35], [xL35, 12.5, zL35], [xL35, 12.5, -57.5], [BATX + 1, BATY, -57.5], [BATX + 1, BATY, SIMZ + 5]], note='SIM868 power: straight from the switched 18650, never 5 V')
+off(7, 'w05', 'gnd', 'L33 (GND bus col 33, next to C1−)', 'SIM868 battery socket − (PH2.0 plug, black lead)',
+    [[xL33, YB, zL33], [xL33, 11.5, zL33], [xL33, 11.5, -56.5], [BATX - 1, BATY - 0.5, -56.5], [BATX - 1, BATY - 0.5, SIMZ + 5]])
+for hole, pin, net, what in (('J29', 36, 'v33', '3V3(OUT)'), ('J30', 19, 'uart', 'GP14 / PWR_EN'), ('J31', 1, 'uart', 'GP0 / RXD'), ('J32', 2, 'uart', 'GP1 / TXD'), ('J33', 3, 'gnd', 'GND')):
+    hx_, hz_ = hxz(hole); px, py, pz = simpin(pin); ye = 34.0 - (int(hole[1:]) - 29) * 0.5
+    off(7, 'mf', net, f'{hole} (H2 {pins[hole][1].split(" →")[0]})', f'SIM868 header pin {pin} ({what})',
+        [[hx_, 30, hz_], [hx_, ye, hz_], [hx_, ye, -40 - (int(hole[1:]) - 29)], [px, ye, -40 - (int(hole[1:]) - 29)], [px, py, -44], [px, py, pz + 14]],
+        note='female end on H2, male end straight into the SIM868 socket (Pico removed)', plug='z')
+
 # power (step 9)
 X35 = top('X35'); W35 = top('W35'); AA35 = top('AA35'); AA34 = top('AA34'); Y1 = top('Y1'); AA1 = top('AA1')
 off(9, 'lead', 'vbat', 'Holder + lead', 'TP4056 B+', [[32, 12, 32], [40, 8, 32], [40, 6, 24.5], [48.5, 4.6, 24.5]])
@@ -262,7 +275,7 @@ for n, lz, net, lidn in (('5V', LIDZ['5V'], 'v5', '5V'), ('GND', LIDZ['GND'], 'g
 off(12, 'ffcut', 'audio', 'H1 SPK+ (Z23)', 'Speaker + tab', [[H1x['SPK+'], 30, 10.48], [H1x['SPK+'], 33.2, 10.48], [H1x['SPK+'], 33.2, 31], [-24.5, 32, 31]], harness=True)
 off(12, 'ffcut', 'audio', 'H1 SPK− (Z24)', 'Speaker − tab', [[H1x['SPK−'], 30, 10.48], [H1x['SPK−'], 33.8, 10.48], [H1x['SPK−'], 33.8, 39], [-24.5, 32, 39]], harness=True)
 
-SLACK = {'pair': 25, 'top': 10, 'lead': 10, 'w05': 15, 'ff': 25, 'ffcut': 25}
+SLACK = {'pair': 25, 'top': 10, 'lead': 10, 'w05': 15, 'ff': 25, 'ffcut': 25, 'mf': 20}
 for w in offb:
     L = w['len'] + SLACK[w['kind']]
     k = w['kind']
@@ -270,6 +283,9 @@ for w in offb:
     elif k == 'top': cut = f"insulated core · cut {r5(L)} mm, strip 5 mm (screw end) / 3 mm"
     elif k == 'lead': cut = f"holder lead · trim to {r5(L)} mm, strip 4 mm"
     elif k == 'w05': cut = f"0.5 mm² {'red' if w['net'] in ('vbat', 'v5') else 'black'} · cut {r5(L)} mm, strip 4 mm, tin"
+    elif k == 'mf':
+        assert L <= 100, f'M-F jumper too short for {w["a"]}: {L} mm'
+        cut = 'M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket'
     elif k == 'ff': cut = f"F-F jumper → {r5(L)} mm: cut {100 - r5(L)} mm out of the middle, splice + heat-shrink"
     else: cut = f"F-F jumper → {r5(L)} mm: keep one female end, cut {100 - r5(L)} mm off, solder to the speaker tab"
     w['cut'] = cut; w['L'] = r5(L); w['side'] = 'off'
