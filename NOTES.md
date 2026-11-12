@@ -248,3 +248,8 @@ All lines fit. **VO-03 is tight** (≈6.6 s in a 7 s slot) → read at a normal 
 - Result (2026-11-12): first outgoing call placed from the practice rig. Fixes on the way: D26/D27 jumpers were swapped (D26 sat in pin 19, D27 in pin 2), D25 needed reseating in hole 1. Modem at 115200, signal CSQ 30–31, registered on "vodafone", battery 3.99 V. The SIM still has its PIN on: it was unlocked for the session with AT+CPIN, so after every power-up it asks again. For the finished device, switch the PIN off in a phone.
 - Diagnostic sketch: `practice/sim868_diag/sim868_diag.ino` (tries both RX/TX orders and 5 bauds, reads idle line levels, pulses PWRKEY only when SIM TXD is low = modem off).
 - Incoming call (2026-11-12): Kaszti's phone called Rezon. Caller ID showed (+CLIP), answered with ATA on the 2nd RING, connected ~65 s until the caller hung up (NO CARRIER). Speaker from the Waveshare box on the board, AT+CLVL=100, AT+CMIC=0,10. Both directions work.
+
+## Firmware master prompt (2026-11-12)
+- Prompt for the firmware session saved as `firmware/MASTER_PROMPT.md`. Explainer PDF: `Rezon_How_It_Works.pdf` (source `explainer_source/`).
+- Kaszti's decisions: fall score = feature vector · weights fitted offline on our recordings (device does vector maths only); one geophone; the button always cancels, walking cancels only as a NEW steady rhythm after the impact (people already walking never cancel); the prompt covers the whole firmware.
+- Research behind it: G-Fall (Shenzhen Univ.), Clemente et al. (Univ. of Georgia), FootprintID (CMU/Stanford, SM-24), Liu et al., Shao et al. No usable repo, Hugging Face model or public fall dataset for floor vibration was found.
