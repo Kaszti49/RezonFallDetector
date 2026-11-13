@@ -4,7 +4,7 @@ python parts.py <out_dir>"""
 import html, os, sys
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'out'
-DATE = '2026-11-12'
+DATE = '2026-11-13'
 esc = html.escape
 
 # (qty, name, code, stock row, source, purpose EN, purpose HU, backup?)
@@ -31,15 +31,17 @@ SECTIONS = [
          'Goes on the board’s “GSM” socket; mandatory. It should be in the Waveshare box (none is fitted in our photo): buy one if it is missing',
          'A panel „GSM” u.FL aljzatára, kötelező. A Waveshare dobozában kell lennie (a fotón nincs felrakva); ha hiányzik, venni kell', False),
         (1, 'PH2.0 (JST-PH 2.0 mm) 2-pin plug with ~10 cm leads', '', '', 'Buy',
-         '18650 VBAT into the SIM868 board’s battery socket. Not in the hackathon stock; check polarity against the box’s Li-po plug',
-         '18650 VBAT → a SIM868 panel akku aljzatába. Nincs a hackathon listán; a polaritást a dobozban lévő Li-po dugójához kell igazítani', False),
+         '4.0 V from the step-down into the SIM868 board’s battery socket. Not in the hackathon stock; check polarity against the box’s Li-po plug',
+         '4.0 V a step-downról → a SIM868 panel akku aljzatába. Nincs a hackathon listán; a polaritást a dobozban lévő Li-po dugójához kell igazítani', False),
         (1, 'SIM card from one of our phones (PIN disabled), nano', '', '', 'Ours',
          'Network access for the call; must work on 2G. The SIM868 board takes a nano SIM directly, no adapter',
          'Hálózat a híváshoz, 2G kell. A SIM868 panel nano SIM-et fogad, adapter nem kell', False),
         (1, 'PCM5102A alapú DAC audió dekóder I2S modul', '', '249', 'Hackathon',
          'Audio out for “Mari néni, jól van?”; the S3 has no built-in DAC', 'Hang kimenet (az S3-nak nincs DAC-ja): „Mari néni, jól van?”', False),
-        (1, 'Hangszóró erősítő, PAM8403 alapú 2x3W erősítő modul', '', '269', 'Hackathon',
-         'Speaker amplifier, runs from the 5 V rail', 'Erősítő a hangszóróhoz, 5 V-ról', False),
+        (1, 'ZK-502M Bluetooth / AUX amplifier board (TPA3116D2, 2 × 50 W, 5–24 V)', 'ZK-502M', '', 'Ours',
+         'Speaker amplifier instead of the PAM8403, fed from the 5 V rail; volume knob low (1 W speaker)', 'Erősítő a PAM8403 helyett, 5 V-ról; hangerő alacsonyan (1 W-os hangszóró)', False),
+        (1, '3.5 mm male–male AUX cable', '', '', 'Ours',
+         'PCM5102A line-out jack → ZK-502M AUX input', 'PCM5102A vonalkimenet → ZK-502M AUX bemenet', False),
         (1, 'Hangszóró, kicsi 1W 8ohm', '', '262', 'Hackathon', 'Speaker', 'Hangszóró', False),
         (1, 'WS2812B RGB vezérelhető LED szalag, 1 m, 60 LED/m', 'WS2812B-LS-60-IP20-BK', '68', 'Hackathon',
          'Cut one pixel: green / amber / red status LED', '1 pixelt vágunk le: zöld / sárga / piros státusz LED', False),
@@ -49,19 +51,18 @@ SECTIONS = [
          '“I’m OK” / cancel-alarm button (+1 spare)', '„Jól vagyok” / riasztás törlés gomb (+1 tartalék)', False),
     ]),
     ('Power', [
-        (2, 'Li-Ion akkumulátor, 18650, 3.6V, 3500mAh', 'INR18650-MJ1', '2', 'Hackathon',
-         'Battery (+1 spare); handles the SIM868’s 2 A bursts easily', 'Akku (+1 tartalék); bírja a SIM868 2 A-es csúcsait', False),
-        (1, 'Elem / akkumulátortartó, 1 x 18650, vezetékkel', '1 X 18650 W', '3', 'Hackathon', 'Battery holder', 'Akkutartó', False),
+        (1, 'Power bank with USB-A out, USB-C in (5 V)', '', '', 'Ours',
+         'The only power source: 5 V for everything, charged over its USB-C. Sits outside the case; must not auto-off at low load (test it, use its always-on mode if it has one). A 5 W one gives ~1 A in total',
+         'Az egyetlen táp: 5 V mindennek, USB-C-n tölthető. A dobozon kívül van; kis terhelésnél nem kapcsolhat le (tesztelni, ha van, always-on mód). Egy 5 W-os kb. 1 A-t ad összesen', False),
+        (1, 'USB-A cable (any; far end cut off)', '', '', 'Ours',
+         'Power bank → inside the case through a grommet: red = 5 V, black = GND', 'Power bank → a dobozba egy gumialátéten át: piros = 5 V, fekete = GND', False),
+        (1, 'Kapcsolóüzemű DC-DC konverter (STP28UD-3A, step-up/step-down, 1.25–26 V, 1 A without heatsink)', 'STP28UD-3A', '291', 'Hackathon',
+         '5 V → 4.0 V for the SIM868 (it must never get 5 V); set with its trimmer before connecting',
+         '5 V → 4.0 V a SIM868-nak (5 V-ot soha nem kaphat); a trimmerrel beállítva, mielőtt rákötjük', False),
         (1, 'Világítás billenőkapcsoló, 12V, SPST, OFF-ON', 'AK-01', '46', 'Hackathon',
-         'Main power switch; carries the 2 A bursts (the small slide switch is only rated 0.5 A)',
-         'Főkapcsoló; bírja a 2 A-es csúcsokat (a kis tolókapcsoló csak 0.5 A-es)', False),
-        (1, 'DC-DC boost', '', '304', 'Hackathon',
-         'Cell → 5 V rail for the ESP32 5V pin, amp, DAC and LED only (not the SIM868); set to 5.0 V',
-         'Akku → 5 V sín (ESP32 5V pin, PAM8403, DAC, LED), a SIM868 NEM erről megy; 5.0 V-ra állítva', False),
-        (1, 'TP4056 USB-C charger module with DW01 protection', '', '', 'Ours',
-         'Battery charging; no charger on the hackathon list', 'Akkutöltés, nincs a hackathon listán', False),
+         'Main power switch in the power bank’s 5 V line', 'Főkapcsoló a power bank 5 V-os vezetékében', False),
         (1, 'Fémréteg ellenállás készlet, 500 db, 50 érték, 0.5W, 1%', 'RESISTOR-KIT-500P', '165', 'Hackathon',
-         '1 kΩ across the geophone coil · 2 × 100 kΩ battery divider · 10 kΩ button pull-up (no SIM divider any more)',
+         '1 kΩ across the geophone coil · 2 × 100 kΩ VBAT divider · 10 kΩ button pull-up (no SIM divider any more)',
          '1 kΩ sönt a geofon tekercsére, 2×100 kΩ akkufeszültség-osztó, 10 kΩ felhúzó a gombhoz (SIM osztó már nem kell)', False),
         (1, 'Elektrolit kondenzátor készlet, 0.1uF–1000uF, 500 db', 'ELCOPACK-500', '166', 'Hackathon',
          '1000 µF at the SIM868 power take-off · 470–1000 µF on the 5 V rail', '1000 µF a SIM868 tápleágazásánál, 470–1000 µF az 5 V sínre', False),
@@ -81,7 +82,7 @@ SECTIONS = [
          '5 jumpers H2 → SIM868 board: the male end goes straight into the board’s Pico sockets', '5 jumper H2 → SIM868 panel: a male vég közvetlenül a panel Pico aljzatába megy', False),
         (1, 'kábel 6x0,22', '', '359', 'Hackathon', 'Geophone lead (one twisted pair), about 1 m; board links', 'Geofon vezeték (1 sodrott pár), ~1 m; átkötések', False),
         (1, 'Vezeték, H05V-K, sodrat, Cu, 1 x 0.5mm², piros', '', '353', 'Hackathon',
-         'Battery + / 5 V / SIM868 battery lead', 'Akku + / 5 V / SIM868 akku vezeték', False),
+         '5 V / step-down / SIM868 battery lead', '5 V / step-down / SIM868 akku vezeték', False),
         (1, 'Vezeték, H05V-K, sodrat, Cu, 1 x 0.5mm², fekete', '', '352', 'Hackathon', 'GND', 'GND', False),
         (1, 'Egymagos vörösréz huzal 20 AWG, 15 m', '', '349', 'Hackathon', 'Rails and buses on the perfboard', 'Sínek a nyákon', False),
         (1, 'Zsugorcső készlet (2:1), 530 db', 'HST-SET530', '157', 'Hackathon', 'Insulation', 'Szigetelés', False),
@@ -101,7 +102,7 @@ CSV_EXTRA = [
     '1;Blankoló;;281;Hackathon;Szerszám',
     '1;Fogó készlet;;284;Hackathon;Szerszám',
     '1;Csavarhúzó készlet;;282;Hackathon;Click sorkapcsok (kis lapos)',
-    '1;Multiméter;;;SAJÁT;Nincs a listán – boost 5.0 V beállítása, folytonosság',
+    '1;Multiméter;;;SAJÁT;Nincs a listán – step-down 4.0 V beállítása, USB kábel erek, folytonosság',
     '1;Micro SD kártya;;305;Hackathon (opcionális);Csak ha rezgésadatot akarunk rögzíteni tanításhoz',
     '1;SD kártya olvasó SPI modul;;252;Hackathon (opcionális);Csak ha rezgésadatot akarunk rögzíteni tanításhoz',
     '1;10k Potenciométer;;209;Hackathon (opcionális);Hangerő a DAC és az erősítő között, ha szoftverből nem elég',
@@ -153,17 +154,17 @@ o.append(f'<div class="head"><div><h1><b>REZON</b> fall detector · parts list</
          f'<div class="date"><b>{DATE}</b><br>Row = line in the Hestore stock CSV</div></div>')
 o.append('<div class="grid2"><div class="box"><h3>Signal chain</h3>'
          '<div class="chain"><span>SM-24 geophone</span> → <span>ADC 15 Click</span> → SPI → <span>ESP32-S3</span></div>'
-         '<div class="chain">ESP32-S3 → I²S → <span>PCM5102A</span> → <span>PAM8403</span> → <span>Speaker</span></div>'
+         '<div class="chain">ESP32-S3 → I²S → <span>PCM5102A</span> → AUX → <span>ZK-502M</span> → <span>Speaker</span></div>'
          '<div class="chain">ESP32-S3 → UART → <span>SIM868 (Waveshare)</span> → GSM call → <span>our phone</span></div>'
-         '<div style="color:#6f7377;margin-top:3px">Plus a WS2812B status LED (green / amber / red) and an “I’m OK” button. One 18650 cell feeds the SIM868 directly and a 5 V boost for everything else.</div></div>'
+         '<div style="color:#6f7377;margin-top:3px">Plus a WS2812B status LED (green / amber / red) and an “I’m OK” button. A power bank (outside the case) is the only source: 5 V for everything, and a step-down makes 4.0 V for the SIM868.</div></div>'
          '<div class="box ours"><h3>Ours / to buy (not in hackathon stock)</h3><ul>'
          '<li><b>SM-24 geophone</b> (here)</li><li><b>MikroE ADC 15 Click</b> (ADS131M02, already running on the bench)</li>'
          '<li><b>Waveshare Pico-SIM868 board</b> (here) + its <b>GSM antenna</b>: check the box, buy one if missing</li>'
-         '<li><b>Nano SIM</b> from one of our phones, PIN off</li><li><b>TP4056 USB-C charger module</b> with DW01 protection</li>'
+         '<li><b>Nano SIM</b> from one of our phones, PIN off</li><li><b>Power bank</b> (USB-A out) + a USB-A cable to cut</li>'
          '<li><b>To buy:</b> PH2.0 2-pin plug with leads (battery lead into the SIM868 board)</li></ul></div></div>')
 o.append('<div class="setup"><h3>SIM868 setup</h3><div class="cols"><ul>'
          '<li><b>Pull the Pico H off</b> the SIM868 board: it is not used. The ESP32-S3 drives the board through 5 M-F jumpers into its Pico sockets: <b>pin 1</b> RXD ← GPIO17, <b>pin 2</b> TXD → GPIO18, <b>pin 3</b> GND, <b>pin 19</b> PWRKEY ← GPIO16, <b>pin 36</b> 3V3 ← ESP32 3V3.</li>'
-         '<li>Power it <b>straight from the 18650</b> (3.4–4.4 V) into the board’s <b>PH2.0 battery socket</b>, its power slide switch on the battery side. Never 5 V; header pins 39 (VSYS) and 40 (VBUS) stay empty.</li>'
+         '<li>Power it with <b>4.0 V from the step-down</b> (allowed 3.4–4.4 V) into the board’s <b>PH2.0 battery socket</b>, its power slide switch on the battery side. Never 5 V; header pins 39 (VSYS) and 40 (VBUS) stay empty.</li>'
          '<li>Bursts up to 2 A while transmitting: <b>1000 µF</b> at the take-off on the perfboard, short 0.5 mm² leads.</li>'
          '<li>Logic: the board has its own 3.3 V ↔ 2.8 V level shifter (fed from pin 36), so <b>no divider</b> any more.</li></ul><ul>'
          '<li>Power-on: <b>GPIO16 HIGH for 1.5 s</b> (an NPN pulls PWRKEY low), then wait for <b>RDY</b>. NET LED: fast blink = searching, about every 3 s = registered.</li>'
@@ -174,7 +175,7 @@ for title, rows in SECTIONS:
     o.append(f'<h2>{esc(title)}</h2><table><thead><tr><th></th><th>Qty</th><th>Part</th><th>Row</th><th>Source</th><th>Purpose</th></tr></thead><tbody>'
              + ''.join(row_html(r) for r in rows) + '</tbody></table>')
 o.append('<div class="foot"><div>Second SM-24, if it turns up: same wiring on the Click’s CH2, also with a 1 kΩ resistor across the coil.</div>'
-         '<div>Came with the SIM868 but not used: the Raspberry Pi Pico H, the 600 mAh Li-po (one 18650 feeds everything), the GNSS and BT antennas. Its small speaker is optional (SIM868 speaker output for two-way talk during the call). Left out on purpose: casing, breadboards, soldering tools, displays, other accelerometers.</div></div>')
+         '<div>Came with the SIM868 but not used: the Raspberry Pi Pico H, the 600 mAh Li-po (the step-down feeds the SIM868), the GNSS and BT antennas. Its small speaker is optional (SIM868 speaker output for two-way talk during the call). Left out on purpose: casing, breadboards, soldering tools, displays, other accelerometers.</div></div>')
 o.append('</body></html>')
 os.makedirs(OUT, exist_ok=True)
 open(os.path.join(OUT, 'parts_list.html'), 'w', encoding='utf-8').write(''.join(o))

@@ -255,16 +255,28 @@ for hole, pin, net, what in (('J29', 36, 'v33', '3V3(OUT)'), ('J30', 19, 'uart',
         [[hx_, 30, hz_], [hx_, ye, hz_], [hx_, ye, -40 - (int(hole[1:]) - 29)], [px, ye, -40 - (int(hole[1:]) - 29)], [px, py, -44], [px, py, pz + 14]],
         note='female end on H2, male end straight into the SIM868 socket (Pico removed)', plug='z')
 
-# power (step 9)
-X35 = top('X35'); W35 = top('W35'); AA35 = top('AA35'); AA34 = top('AA34'); Y1 = top('Y1'); AA1 = top('AA1')
-off(9, 'lead', 'vbat', 'Holder + lead', 'Rocker pin 1', [[32, 12, 32], [40, 8, 32], [45, 8, 20.5], [45, 11.7, 10], [58, 11.7, 4.5], [65, 11.7, 4.5]])
-off(9, 'w05', 'vbat', 'Rocker pin 2', 'X35 (VBAT rail end)', [[65, 18.7, 8.5], [41, 18.7, 8.5], [37, 11, X35[2]], [X35[0], 11, X35[2]], X35])
-off(9, 'lead', 'gnd', 'Holder − lead', 'AA35 (GND rail end)', [[32, 12, 39], [42, 8, 39], [43.5, 8, 32.5], [43.5, 10, AA35[2]], [AA35[0], 10, AA35[2]], AA35])
-# boost (step 10)
-off(10, 'w05', 'vbat', 'W35 (VBAT rail)', 'Boost IN+', [W35, [W35[0], 9.4, W35[2]], [36.6, 9.4, W35[2]], [36.6, 2, 9], [36.6, 2, 54], [24.5, 4.6, 54]])
-off(10, 'w05', 'gnd', 'AA34 (GND rail)', 'Boost IN−', [AA34, [AA34[0], 9.0, AA34[2]], [38.4, 9.0, AA34[2]], [38.4, 2, 16], [38.4, 2, 63], [24.5, 4.6, 63]])
-off(10, 'w05', 'v5', 'Boost OUT+', 'Y1 (5 V rail start)', [[-8.5, 4.6, 54], [-14, 2, 54], [-55.9, 2, 54], [-55.9, 2, 17], [-55.9, 9.4, 15.5], [Y1[0], 9.4, Y1[2]], Y1])
-off(10, 'w05', 'gnd', 'Boost OUT−', 'AA1 (GND rail start)', [[-8.5, 4.6, 63], [-14, 2, 63], [-57.6, 2, 63], [-57.6, 2, 17], [-57.6, 9.8, 15.5], [AA1[0], 9.8, AA1[2]], AA1])
+# power (step 9): the power bank is the only source. It sits OUTSIDE the case; a cut USB-A cable enters through the
+# grommet in the left wall. Red = 5 V → rocker (main switch) → 5 V rail at Y1. Black = GND → GND rail at AA1.
+X35 = top('X35'); AA35 = top('AA35'); Y1 = top('Y1'); AA1 = top('AA1')
+BK_IN_H, BK_GND_H = 'Y13', 'AA14'                       # rail holes the step-down takes its input from
+BKIN = top(BK_IN_H); BKGND = top(BK_GND_H)
+off(9, 'usb', 'v5', 'USB cable red (from the power bank, through the grommet)', 'Rocker pin 1',
+    [[-73.0, 6.5, 39.6], [-62, 5, 52], [-40, 8, 70], [30, 8, 70], [45, 8, 40], [45, 8, 20.5], [45, 11.7, 10], [58, 11.7, 4.5], [65, 11.7, 4.5]], note='power bank 5 V into the main switch')
+off(9, 'w05', 'v5', 'Rocker pin 2', 'Y1 (5 V rail start)',
+    [[65, 18.7, 8.5], [50, 18.7, 8.5], [47, 4, 20], [47, 2, 52], [-55.9, 2, 52], [-55.9, 2, 17], [-55.9, 9.4, 15.5], [Y1[0], 9.4, Y1[2]], Y1], note='switched 5 V → 5 V rail')
+off(9, 'usb', 'gnd', 'USB cable black (from the power bank, through the grommet)', 'AA1 (GND rail start)',
+    [[-74.0, 5.5, 41.4], [-63.5, 5.5, 41.4], [-57.6, 5.5, 30], [-57.6, 5.5, 17], [-57.6, 9.8, 15.5], [AA1[0], 9.8, AA1[2]], AA1], note='power bank GND → GND rail')
+# step-down for the SIM868 (step 10): STP28UD-3A (stock row 291) lying where the 18650 holder used to be, set to 4.0 V.
+# 5 V rail → IN, OUT → VBAT rail (col 35) → C1 → SIM868 PH2.0 lead (unchanged).
+BK = {'IN+': [-30, 4.6, 32], 'IN−': [-30, 4.6, 39], 'OUT+': [17, 4.6, 32], 'OUT−': [17, 4.6, 39]}
+off(10, 'w05', 'v5', f'{BK_IN_H} (5 V rail)', 'Step-down IN+',
+    [BKIN, [BKIN[0], 11.5, BKIN[2]], [BKIN[0], 11.5, 20], [-30, 10, 30], BK['IN+']], note='5 V into the step-down')
+off(10, 'w05', 'gnd', f'{BK_GND_H} (GND rail)', 'Step-down IN−',
+    [BKGND, [BKGND[0], 10.5, BKGND[2]], [BKGND[0], 10.5, 22], [-33, 9, 39], BK['IN−']], note='ground into the step-down')
+off(10, 'w05', 'vbat', 'Step-down OUT+ (4.0 V)', 'X35 (VBAT rail end)',
+    [BK['OUT+'], [17, 11, 30], [33.5, 11, 16], [33.5, 11, X35[2]], [X35[0], 11, X35[2]], X35], note='4.0 V → VBAT rail → SIM868')
+off(10, 'w05', 'gnd', 'Step-down OUT−', 'AA35 (GND rail end)',
+    [BK['OUT−'], [17, 10, 41], [AA35[0], 10, 22], [AA35[0], 10, AA35[2]], AA35], note='step-down output ground')
 # harness (step 12)
 LIDZ = {'5V': -3.81, 'GND': -1.27, 'DIN': 1.27, 'BTN': 3.81}
 for n, lz, net, lidn in (('5V', LIDZ['5V'], 'v5', '5V'), ('GND', LIDZ['GND'], 'gnd', 'GND'), ('LED', LIDZ['DIN'], 'io', 'DIN'), ('BTN', LIDZ['BTN'], 'io', 'BTN')):
@@ -273,7 +285,7 @@ for n, lz, net, lidn in (('5V', LIDZ['5V'], 'v5', '5V'), ('GND', LIDZ['GND'], 'g
 off(12, 'ffcut', 'audio', 'H1 SPK+ (Z23)', 'Speaker + tab', [[H1x['SPK+'], 30, 10.48], [H1x['SPK+'], 33.2, 10.48], [H1x['SPK+'], 33.2, 31], [-24.5, 32, 31]], harness=True)
 off(12, 'ffcut', 'audio', 'H1 SPK− (Z24)', 'Speaker − tab', [[H1x['SPK−'], 30, 10.48], [H1x['SPK−'], 33.8, 10.48], [H1x['SPK−'], 33.8, 39], [-24.5, 32, 39]], harness=True)
 
-SLACK = {'pair': 25, 'top': 10, 'lead': 10, 'w05': 15, 'ff': 25, 'ffcut': 25, 'mf': 20}
+SLACK = {'pair': 25, 'top': 10, 'lead': 10, 'w05': 15, 'usb': 15, 'ff': 25, 'ffcut': 25, 'mf': 20}
 for w in offb:
     L = w['len'] + SLACK[w['kind']]
     k = w['kind']
@@ -281,6 +293,7 @@ for w in offb:
     elif k == 'top': cut = f"insulated core · cut {r5(L)} mm, strip 5 mm (screw end) / 3 mm"
     elif k == 'lead': cut = f"holder lead · trim to {r5(L)} mm, strip 4 mm"
     elif k == 'w05': cut = f"0.5 mm² {'red' if w['net'] in ('vbat', 'v5') else 'black'} · cut {r5(L)} mm, strip 4 mm, tin"
+    elif k == 'usb': cut = f"USB-A cable, {'red' if w['net'] == 'v5' else 'black'} core · {r5(L)} mm past the grommet, strip 4 mm, tin (white + green cut short, taped)"
     elif k == 'mf':
         assert L <= 100, f'M-F jumper too short for {w["a"]}: {L} mm'
         cut = 'M-F jumper 10 cm (stock row 39), used as is: female end on H2, male end into the SIM868 socket'
@@ -295,6 +308,10 @@ for w in wires:
     if w['kind'] in ('link', 'lid'):
         assert w['a'] != w['b']
 problems = []
+for h in (BK_IN_H, BK_GND_H):   # rail holes that take an off-board wire must be free of pins, legs and links
+    if h in pins or any(h in c[1] for c in comps.values()): problems.append(f'{h} is a pin/leg')
+    for w in wires:
+        if w['kind'] in ('link', 'bridge') and h in (w.get('full') or w['route']): problems.append(f'{h} used by {w["kind"]} {w["a"]}->{w["b"]}')
 for st, a, b, _ in bridges:
     ca, ra = parse(a); cb, rb = parse(b)
     if abs(ca - cb) + abs(ra - rb) != 1: problems.append(f'bridge not adjacent {a}-{b}')

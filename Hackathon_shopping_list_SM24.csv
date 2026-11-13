@@ -5,19 +5,19 @@
 1;16 bites analog-digital konverter modul, I2C;ADS1115-M;11;Hackathon (tartalék);Csak ha a Click nem működik: PGA ±0.256 V, max 860 SPS
 1;Waveshare Pico-SIM868-GSM/GPRS/GNSS board (SIM868: 2G GSM/GPRS + GNSS + BT);;;SAJÁT;Hívja a telefonunkat, ha esés van és senki nem nyomja meg a „Jól vagyok” gombot. Csak modemként: a Pico H lekerül róla, az ESP32-S3 vezérli UART-on
 1;GSM antenna with u.FL (IPEX) plug, 850/900/1800/1900 MHz;;;SAJÁT;A panel „GSM” u.FL aljzatára, kötelező. A Waveshare dobozában kell lennie (a fotón nincs felrakva), ha hiányzik, venni kell
-1;PH2.0 (JST-PH 2.0 mm) 2-pin plug with ~10 cm leads;;;VÁSÁROLNI;18650 VBAT → a SIM868 panel akku aljzatába. Nincs a hackathon listán, a polaritást a dobozban lévő Li-po dugójához kell igazítani
+1;PH2.0 (JST-PH 2.0 mm) 2-pin plug with ~10 cm leads;;;VÁSÁROLNI;4.0 V a step-downról → a SIM868 panel akku aljzatába. Nincs a hackathon listán, a polaritást a dobozban lévő Li-po dugójához kell igazítani
 1;SIM card from one of our phones (PIN disabled), nano;;;SAJÁT;Hálózat a híváshoz, 2G kell. A SIM868 panel nano SIM-et fogad, adapter nem kell
 1;PCM5102A alapú DAC audió dekóder I2S modul;;249;Hackathon;Hang kimenet (az S3-nak nincs DAC-ja): „Mari néni, jól van?”
-1;Hangszóró erősítő, PAM8403 alapú 2x3W erősítő modul;;269;Hackathon;Erősítő a hangszóróhoz, 5 V-ról
+1;ZK-502M Bluetooth / AUX amplifier board (TPA3116D2, 2 × 50 W, 5–24 V);ZK-502M;;SAJÁT;Erősítő a PAM8403 helyett, 5 V-ról, hangerő alacsonyan (1 W-os hangszóró)
+1;3.5 mm male–male AUX cable;;;SAJÁT;PCM5102A vonalkimenet → ZK-502M AUX bemenet
 1;Hangszóró, kicsi 1W 8ohm;;262;Hackathon;Hangszóró
 1;WS2812B RGB vezérelhető LED szalag, 1 m, 60 LED/m;WS2812B-LS-60-IP20-BK;68;Hackathon;1 pixelt vágunk le: zöld / sárga / piros státusz LED
 1;1N4001 dióda;;364;Hackathon;WS2812B VDD 5 V → ~4.3 V, hogy a 3.3 V-os adatjelet biztosan lássa
 2;TACT mikrokapcsoló, SPST-NO, THT, 6x6mm, 5mm;TACT-65R-F;51;Hackathon;„Jól vagyok” / riasztás törlés gomb (+1 tartalék)
-2;Li-Ion akkumulátor, 18650, 3.6V, 3500mAh;INR18650-MJ1;2;Hackathon;Akku (+1 tartalék), bírja a SIM868 2 A-es csúcsait
-1;Elem / akkumulátortartó, 1 x 18650, vezetékkel;1 X 18650 W;3;Hackathon;Akkutartó
-1;Világítás billenőkapcsoló, 12V, SPST, OFF-ON;AK-01;46;Hackathon;Főkapcsoló, bírja a 2 A-es csúcsokat (a kis tolókapcsoló csak 0.5 A-es)
-1;DC-DC boost;;304;Hackathon;Akku → 5 V sín (ESP32 5V pin, PAM8403, DAC, LED), a SIM868 NEM erről megy, 5.0 V-ra állítva
-1;TP4056 USB-C charger module with DW01 protection;;;SAJÁT;Akkutöltés, nincs a hackathon listán
+1;Power bank with USB-A out, USB-C in (5 V);;;SAJÁT;Az egyetlen táp: 5 V mindennek, USB-C-n tölthető. A dobozon kívül van, kis terhelésnél nem kapcsolhat le (tesztelni, ha van, always-on mód). Egy 5 W-os kb. 1 A-t ad összesen
+1;USB-A cable (any, far end cut off);;;SAJÁT;Power bank → a dobozba egy gumialátéten át: piros = 5 V, fekete = GND
+1;Kapcsolóüzemű DC-DC konverter (STP28UD-3A, step-up/step-down, 1.25–26 V, 1 A without heatsink);STP28UD-3A;291;Hackathon;5 V → 4.0 V a SIM868-nak (5 V-ot soha nem kaphat), a trimmerrel beállítva, mielőtt rákötjük
+1;Világítás billenőkapcsoló, 12V, SPST, OFF-ON;AK-01;46;Hackathon;Főkapcsoló a power bank 5 V-os vezetékében
 1;Fémréteg ellenállás készlet, 500 db, 50 érték, 0.5W, 1%;RESISTOR-KIT-500P;165;Hackathon;1 kΩ sönt a geofon tekercsére, 2×100 kΩ akkufeszültség-osztó, 10 kΩ felhúzó a gombhoz (SIM osztó már nem kell)
 1;Elektrolit kondenzátor készlet, 0.1uF–1000uF, 500 db;ELCOPACK-500;166;Hackathon;1000 µF a SIM868 tápleágazásánál, 470–1000 µF az 5 V sínre
 1;Kerámia kondenzátor készlet, 24 féle, 960 db;CER-CAP-PACK;167;Hackathon;100 nF hidegítők a modulok tápjára
@@ -27,7 +27,7 @@
 1;Szalagkábel csatlakozóval, 10cm, 40p, female-female (jumper);RC-40-10/FF;42;Hackathon;Click mikroBUS → ESP32-S3 (SCK, SDO, SDI, CS1, CS2, INT, RST, 3V3, GND), fedél kábelköteg
 1;Szalagkábel csatlakozóval, 10cm, 40p, male-female (jumper);RC-40-10/MF;39;Hackathon;5 jumper H2 → SIM868 panel: a male vég közvetlenül a panel Pico aljzatába megy
 1;kábel 6x0,22;;359;Hackathon;Geofon vezeték (1 sodrott pár), ~1 m, átkötések
-1;Vezeték, H05V-K, sodrat, Cu, 1 x 0.5mm², piros;;353;Hackathon;Akku + / 5 V / SIM868 akku vezeték
+1;Vezeték, H05V-K, sodrat, Cu, 1 x 0.5mm², piros;;353;Hackathon;5 V / step-down / SIM868 akku vezeték
 1;Vezeték, H05V-K, sodrat, Cu, 1 x 0.5mm², fekete;;352;Hackathon;GND
 1;Egymagos vörösréz huzal 20 AWG, 15 m;;349;Hackathon;Sínek a nyákon
 1;Zsugorcső készlet (2:1), 530 db;HST-SET530;157;Hackathon;Szigetelés
@@ -42,7 +42,7 @@
 1;Blankoló;;281;Hackathon;Szerszám
 1;Fogó készlet;;284;Hackathon;Szerszám
 1;Csavarhúzó készlet;;282;Hackathon;Click sorkapcsok (kis lapos)
-1;Multiméter;;;SAJÁT;Nincs a listán – boost 5.0 V beállítása, folytonosság
+1;Multiméter;;;SAJÁT;Nincs a listán – step-down 4.0 V beállítása, USB kábel erek, folytonosság
 1;Micro SD kártya;;305;Hackathon (opcionális);Csak ha rezgésadatot akarunk rögzíteni tanításhoz
 1;SD kártya olvasó SPI modul;;252;Hackathon (opcionális);Csak ha rezgésadatot akarunk rögzíteni tanításhoz
 1;10k Potenciométer;;209;Hackathon (opcionális);Hangerő a DAC és az erősítő között, ha szoftverből nem elég

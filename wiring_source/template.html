@@ -142,8 +142,8 @@ const C = {
   base: '#e8e3d9', lid: '#ddd6ca', band: '#6f9894', slot: '#8a857c', collar: '#86a39f'
 };
 const W = DATA.netcol;
-const LEGEND = [['GND', W.gnd], ['5 V', W.v5], ['VBAT (switched)', W.vbat], ['3V3', W.v33], ['SPI (ADC)', W.spi],
-  ['I²S (audio)', W.i2s], ['UART (SIM868)', W.uart], ['Speaker', W.audio], ['LED / button', W.io], ['Battery sense', W.sense], ['Geophone', W.geoP], ['Bare rail / bus', C.bare]];
+const LEGEND = [['GND', W.gnd], ['5 V', W.v5], ['VBAT (4.0 V, SIM868)', W.vbat], ['3V3', W.v33], ['SPI (ADC)', W.spi],
+  ['I²S (audio)', W.i2s], ['UART (SIM868)', W.uart], ['Speaker', W.audio], ['LED / button', W.io], ['VBAT sense', W.sense], ['Geophone', W.geoP], ['Bare rail / bus', C.bare]];
 
 /* ======================= three setup ======================= */
 const canvas = document.getElementById('gl');
@@ -323,18 +323,25 @@ for (const [id, c] of Object.entries(DATA.comps)) {
   g.add(boxB(1.6, 2.5, 3, '#c9cdd0', 51, 33, -30)); g.add(boxB(1.6, 2.5, 3, '#c9cdd0', 59, 33, -30));
   const r = mesh(new THREE.CylinderGeometry(0.9, 0.9, 4.5, 12), C.res); r.rotation.z = Math.PI / 2; r.position.set(55, 35.6, -27.5); g.add(r); }
 /* ---- battery, rocker, boost ---- */
-{ const g = part('batt', 9, '18650 cell + holder', v(-6, 25, 36));
-  g.add(boxB(77, 3, 21, C.holder, -6.5, 0, 35.5)); g.add(boxB(3, 20, 21, C.holder, -43.5, 0, 35.5)); g.add(boxB(3, 20, 21, C.holder, 30.5, 0, 35.5));
-  g.add(boxB(77, 12, 1.6, C.holder, -6.5, 0, 25.8)); g.add(boxB(77, 12, 1.6, C.holder, -6.5, 0, 45.2));
-  const cell = mesh(new THREE.CylinderGeometry(9.2, 9.2, 65, 32), C.cell); cell.rotation.z = Math.PI / 2; cell.position.set(-6.5, 11.5, 35.5); g.add(cell);
-  const band = mesh(new THREE.CylinderGeometry(9.3, 9.3, 18, 32), '#7a9a96'); band.rotation.z = Math.PI / 2; band.position.set(-6.5, 11.5, 35.5); g.add(band); }
+/* ---- STP28UD-3A step-down (5 V → 4.0 V for the SIM868), where the 18650 holder used to be ---- */
+{ const g = part('buck', 10, 'Step-down STP28UD-3A → 4.0 V (SIM868)', v(-6, 22, 36));
+  g.add(boxB(50, 1.6, 24, C.boost, -6.5, 3, 35.5));
+  g.add(boxB(11, 6, 11, '#3c3f42', -17, 4.6, 35.5)); g.add(boxB(11, 6, 11, '#3c3f42', 2, 4.6, 35.5));
+  g.add(cyl(3.2, 8, C.cap, -26, 4.6, 26)); g.add(cyl(3.2, 8, C.cap, 13, 4.6, 26)); g.add(boxB(4.5, 1.6, 9.5, '#5f7f9e', -7.5, 4.6, 44));
+  g.add(boxB(5, 1.2, 4, C.chip, -7.5, 4.6, 27)); g.add(boxB(5, 1.2, 4, C.chip, 10, 4.6, 44));
+  [[-30, 32], [-30, 39], [17, 32], [17, 39]].forEach(([x, z]) => g.add(cyl(1, 0.2, '#c9cdd0', x, 4.6, z, 10))); }
 { const g = part('rocker', 9, 'Power rocker', v(76, 30, 7));
   g.add(boxB(20, 17, 12, C.rocker, 76, 6, 6.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 10.5, 4.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 17.5, 8.5));
   g.add(boxB(2.4, 21, 15, C.rocker, 89.2, 4, 6.5)); const pad = box(2.2, 16, 11, '#6a8f8b', 90.8, 14.5, 6.5); pad.rotation.z = 0.12; g.add(pad); }
-{ const g = part('boost', 10, 'DC-DC boost → 5 V', v(8, 16, 59));
-  g.add(boxB(36, 1.6, 17, C.boost, 8, 3, 58.5)); g.add(boxB(7, 4, 7, '#3c3f42', 6, 4.6, 58.5)); g.add(boxB(4, 1.2, 3, C.chip, 14, 4.6, 58.5));
-  g.add(boxB(5, 5, 9.5, '#5f7f9e', -2, 4.6, 58.5));
-  [54, 63].forEach(z => { g.add(cyl(0.9, 0.2, '#c9cdd0', 24.5, 4.6, z, 10)); g.add(cyl(0.9, 0.2, '#c9cdd0', -8.5, 4.6, z, 10)); }); }
+/* ---- power bank OUTSIDE the case (size unknown: generic box), its USB-A cable through a grommet in the left wall ---- */
+{ const g = part('pbank', 9, 'Power bank (outside the case) · USB OUT → 5 V', v(-150, 30, 58));
+  g.add(boxB(62, 22, 92, C.boost, -150, -4.4, 58)); g.add(boxB(1, 6, 13, '#2f3133', -118.6, 4, 58));
+  g.add(cyl(1.6, 0.6, '#9fd1c9', -135, 17.6, 20, 12)); g.add(cyl(1.6, 0.6, '#9fd1c9', -140, 17.6, 20, 12));
+  const plug = boxB(14, 4.6, 12, '#d8d6d0', -111.5, 4.7, 58); g.add(plug);
+  const cab = new THREE.CatmullRomCurve3([v(-104.5, 7, 58), v(-95, 6.5, 52), v(-84, 6, 45)]);
+  g.add(mesh(new THREE.TubeGeometry(cab, 30, 1.6, 10, false), '#2f3133'));
+  const gr = mesh(new THREE.TorusGeometry(2.4, 0.9, 8, 20), '#3a3c3e'); gr.position.set(-75.9, 6, 42.0); gr.rotation.y = Math.atan2(-0.875, 0.484); g.add(gr);
+  g.add(mesh(new THREE.TubeGeometry(new THREE.LineCurve3(v(-84, 6, 45), v(-73.5, 6, 40.6)), 4, 1.6, 10, false), '#2f3133')); }
 
 /* ======================= case ======================= */
 const caseMeshes = [], lidMeshes = [];
@@ -356,10 +363,9 @@ const baseG = new THREE.Group(); scene.add(baseG);
     baseG.add(regCase(boxB(along ? 1.6 : 8, 11, along ? 8 : 1.6, '#d6d0c4', x, 0, z), caseMeshes));
     baseG.add(regCase(boxB(along ? 2.6 : 8, 1.4, along ? 8 : 2.6, '#c9c2b4', x + nx * 1.1, 7.8, z + nz * 1.1), caseMeshes)); };
   hook(-58.6, -20, 1, 0); hook(34.6, -6, -1, 0); hook(-12, -56.6, 0, 1); hook(-30, 16.6, 0, -1);
-  [[-30, 23.9, 1], [17, 23.9, 1], [-30, 47.1, -1], [17, 47.1, -1]].forEach(([x, z, n]) => {
-    baseG.add(regCase(boxB(8, 21.5, 1.6, '#d6d0c4', x, 0, z), caseMeshes)); baseG.add(regCase(boxB(8, 1.4, 2.6, '#c9c2b4', x, 20.1, z + n * 1.1), caseMeshes)); });
-  baseG.add(regCase(boxB(38, 4, 1.4, '#d6d0c4', 8, 0, 49.3), caseMeshes)); baseG.add(regCase(boxB(38, 4, 1.4, '#d6d0c4', 8, 0, 67.7), caseMeshes));
-  baseG.add(regCase(boxB(1.4, 4, 19.8, '#d6d0c4', -10.7, 0, 58.5), caseMeshes));
+  // step-down pocket (replaces the 18650 holder tabs): low walls around a 50 × 24 mm module
+  baseG.add(regCase(boxB(53.2, 4, 1.6, '#d6d0c4', -6.5, 0, 22.7), caseMeshes)); baseG.add(regCase(boxB(53.2, 4, 1.6, '#d6d0c4', -6.5, 0, 48.3), caseMeshes));
+  baseG.add(regCase(boxB(1.6, 4, 24, '#d6d0c4', -32.8, 0, 35.5), caseMeshes)); baseG.add(regCase(boxB(1.6, 4, 24, '#d6d0c4', 19.8, 0, 35.5), caseMeshes));
   const cup = mesh(new THREE.LatheGeometry([[15.6, 0], [19, 0], [19, 9], [15.6, 9]].map(p => new THREE.Vector2(p[0], p[1])), 64), '#d6d0c4', { side: THREE.DoubleSide });
   cup.position.set(55, 0, -30); baseG.add(regCase(cup, caseMeshes));
   [0, 120, 240].forEach(a => { const t = a * Math.PI / 180; const s = mesh(new THREE.CylinderGeometry(19.05, 19.05, 2.2, 12, 1, true, t, 0.55), C.slot, { side: THREE.DoubleSide }); s.position.set(55, 6.5, -30); baseG.add(regCase(s, caseMeshes)); });
@@ -416,7 +422,7 @@ function polyCurve(pts, rad) {
 const wireRoot = new THREE.Group(); scene.add(wireRoot);
 const lidWireRoot = new THREE.Group(); lidG.add(lidWireRoot);
 const markRoot = new THREE.Group(); scene.add(markRoot);
-const RAD = { bus: 0.42, bridge: 0.5, link: 0.36, lid: 0.34, top: 0.42, w05: 0.85, lead: 0.6, pair: 0.38, ff: 0.62, ffcut: 0.62, mf: 0.62 };
+const RAD = { bus: 0.42, bridge: 0.5, link: 0.36, lid: 0.34, top: 0.42, w05: 0.85, usb: 0.75, lead: 0.6, pair: 0.38, ff: 0.62, ffcut: 0.62, mf: 0.62 };
 const wires = DATA.wires;
 wires.forEach((w, i) => {
   const g = new THREE.Group(); let pts, color = w.kind === 'bus' || w.kind === 'bridge' ? C.bare : W[w.net];
@@ -474,8 +480,8 @@ const ST = { solder: ['solder', 'Soldering station'], cut: ['cut', 'Cutting benc
 const VIEW = {
   overview: { t: [0, 8, 0], r: 360, th: 28, ph: 52 }, cut: { t: [-12, 8, -18], r: 210, th: 0, ph: 30 },
   sockets: { t: [-12, 10, -20], r: 200, th: 12, ph: 38 }, board: { t: [-12, 6, -20], r: 175, th: 0, ph: 12 },
-  geo: { t: [18, 18, -18], r: 185, th: 32, ph: 48 }, power: { t: [48, 10, 18], r: 165, th: 62, ph: 50 },
-  boost: { t: [-2, 6, 32], r: 225, th: 18, ph: 42 }, lidboard: { t: [214, 6, 0], r: 120, th: 0, ph: 20 },
+  geo: { t: [18, 18, -18], r: 185, th: 32, ph: 48 }, power: { t: [-30, 8, 30], r: 380, th: 8, ph: 50 },
+  boost: { t: [-4, 6, 22], r: 190, th: 12, ph: 48 }, lidboard: { t: [214, 6, 0], r: 120, th: 0, ph: 20 },
   harness: { t: [-8, 22, 10], r: 150, th: -38, ph: 58 }, sim: { t: [-4, 14, -44], r: 250, th: 18, ph: 42 }, check: { t: [0, 10, -5], r: 330, th: 20, ph: 46 },
   base: { t: [0, 10, 0], r: 340, th: 18, ph: 44 }, lid: { t: [0, 22, 0], r: 360, th: 22, ph: 55 },
   layflat: { t: [98, 0, 0], r: 480, th: 0, ph: 38 }, closed: { t: [0, 16, 0], r: 330, th: 30, ph: 60 }
@@ -485,7 +491,7 @@ const steps = [
     lead: 'The finished fall detector inside its printed case (ghost). Each step adds one group of connections. Every connection names the <b>exact hole</b> on the perfboard and the <b>exact pin</b> it lands on.',
     notes: ['<b>Hole names:</b> rows <b>A–AA</b> from the back edge to the front edge, columns <b>1–35</b> from left to right, seen from the component side with H1 and the rails at the front. Example: <span class="mono">K6</span> = row K, column 6.',
       '<b>All board links are on the solder side</b>, soldered straight onto the pin legs. Use <b>Solder side</b> (top right) to see the board flipped: column 1 is then on the right.',
-      '<b>Bare rails</b> (silver): GND along row AA, 5 V along row Y (cols 1–20), VBAT along column 35, two GND buses (cols 2 and 33).',
+      '<b>Bare rails</b> (silver): GND along row AA, 5 V along row Y (cols 1–20), VBAT (4.0 V from the step-down, SIM868 only) along column 35, two GND buses (cols 2 and 33).',
       '<b>X-ray</b> makes boards and modules see-through so the solder-side wires show from the top.'],
     tip: 'Hover any connection in the list to isolate it in 3D with its hole and pin names.' },
   { phase: 'Prep', title: 'Cut the perfboard', view: 'cut', st: ['cut'], focus: ['board', 'lidpcb'], caseMode: 'ghost', lid: 'ghost',
@@ -520,23 +526,29 @@ const steps = [
     lead: 'The Waveshare SIM868 board is used as a modem only: <b>pull the Pico H off it</b>. C1 goes in, four links run on the solder side to H2, two 0.5 mm² leads take VBAT to the board’s battery socket, and five M-F jumpers go from H2 into the board’s Pico sockets.',
     holes: [['pin 1', 'GP0 → SIM868 RXD (through the board’s 3.3 V level shifter) ← H2 J31 ← GPIO17'], ['pin 2', 'GP1 ← SIM868 TXD → H2 J32 → GPIO18'], ['pin 3', 'GND ← H2 J33'],
       ['pin 19', 'GP14 / PWR_EN: HIGH 1.5 s switches the SIM868 on or off ← H2 J30 ← GPIO16'], ['pin 36', '3V3(OUT): powers the board’s level shifter and mic ← H2 J29 ← ESP32 3V3'],
-      ['BAT', 'PH2.0 2-pin battery socket ← 18650 VBAT (L35) and GND (L33)'], ['GSM', 'u.FL socket: GSM antenna, always connected before power-on']],
+      ['BAT', 'PH2.0 2-pin battery socket ← 4.0 V VBAT (L35) and GND (L33)'], ['GSM', 'u.FL socket: GSM antenna, always connected before power-on']],
     notes: ['Pin numbers are the Pico pin numbers (pin 1 = GP0, at the end where the Pico’s USB sat). Pins 1–20 run along the antenna edge (GSM, BT): keep that edge <b>up</b>.',
       '<b>Battery lead:</b> splice the 0.5 mm² wires to a PH2.0 plug pigtail. Check polarity against the plug of the Li-po that came in the box (red = +) before plugging in.',
       '<b>Power switch on the SIM868 board:</b> slide it to the <b>battery</b> side (the other side takes power from the Pico’s USB, which is gone).',
       'Nano SIM (PIN off) into the board’s slot before it goes into the cradle. GNSS and BT antennas are not needed.',
       'Firmware: UART1 TX 17 / RX 18 at 115200; at boot drive GPIO16 HIGH for 1.5 s, then LOW, then wait for <span class="mono">RDY</span> / send <span class="mono">AT</span>.'],
-    warn: '<b>SIM868 power is VBAT only</b> (3.4–4.4 V). Never 5 V, and nothing on header pin 39 (VSYS) or 40 (VBUS). Never let it transmit without the GSM antenna.' },
-  { phase: 'Wiring', title: 'Battery sense, button & LED lines', view: 'board', st: ['solder'], focus: ['R1', 'R4', 'R5', 'esp', 'h1'], caseMode: 'ghost', lid: 'hidden', flip: true,
-    lead: 'R4/R5 halve VBAT for GPIO1; R1 pulls GPIO7 up to 3V3; two links carry LED data and the button line to H1.',
+    warn: '<b>SIM868 power is VBAT only</b> (4.0 V from the step-down, allowed 3.4–4.4 V). Never 5 V, and nothing on header pin 39 (VSYS) or 40 (VBUS). Never let it transmit without the GSM antenna.' },
+  { phase: 'Wiring', title: 'VBAT sense, button & LED lines', view: 'board', st: ['solder'], focus: ['R1', 'R4', 'R5', 'esp', 'h1'], caseMode: 'ghost', lid: 'hidden', flip: true,
+    lead: 'R4/R5 halve VBAT (the 4.0 V SIM868 supply) for GPIO1; R1 pulls GPIO7 up to 3V3; two links carry LED data and the button line to H1.',
     notes: ['R4 and R5 lie in the free area at the back right (rows D and F); R1 lies under the ESP32-S3 (sockets give 8 mm of clearance).'] },
-  { phase: 'Power', title: 'Battery → switch', view: 'power', st: ['solder'], focus: ['batt', 'rocker'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'Holder + lead to rocker pin 1, rocker pin 2 to the VBAT rail at X35, holder − lead straight to the GND rail at AA35.',
-    notes: ['Battery <b>out of the holder</b> while soldering.', 'Push the rocker into the base cutout from outside first, then solder its pins. The lamp pin stays empty.', 'Rail-end holes (X35, AA35): push the tinned wire through from the top and solder it to the rail underneath.'],
-    warn: 'No charger board in the device: charge the 18650 in an external charger and use a <b>protected</b> cell (nothing else stops over-discharge).' },
-  { phase: 'Power', title: 'Boost converter to 5.0 V', view: 'boost', st: ['meter', 'solder'], focus: ['boost'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'Set the boost to 5.00 V first (input only, meter on the output), then wire it: IN from W35/AA34, OUT to Y1/AA1.',
-    warn: 'Boost trimmers often start near maximum. Measure before the output touches the board.' },
+  { phase: 'Power', title: 'Power bank → rocker → 5 V rail', view: 'power', st: ['cut', 'solder', 'meter'], focus: ['pbank', 'rocker'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The power bank is the <b>only</b> power source. It sits <b>outside</b> the case; a cut USB-A cable comes in through the grommet in the left wall. Red core → rocker pin 1, rocker pin 2 → 5 V rail at Y1, black core → GND rail at AA1.',
+    notes: ['Strip about 60 mm of the cable jacket inside the case. Red = 5 V, black = GND. Cut the white and green data cores short and tape them. Check with the meter first: power bank on, red to black ≈ 5.0 V.',
+      'Push the rocker into the base cutout from outside first, then solder its pins. The lamp pin stays empty. The rocker is the main switch for everything.',
+      'Rail-end holes (Y1, AA1): push the tinned wire through from the top and solder it to the rail underneath. Cable tie on the jacket just inside the grommet as strain relief.',
+      '<b>Auto-off test first:</b> many power banks switch off below ~50–100 mA. Run the ESP32 alone from it for 2–3 minutes; if it turns off, look for an always-on / low-current mode (often a double press of its button).'],
+    warn: 'A 5 W power bank gives about <b>1 A in total</b>. The SIM868 pulls 2 A bursts while it transmits: C1 and C3 cover them, and the firmware must not play the voice line while the call is connecting.' },
+  { phase: 'Power', title: 'Step-down 4.0 V for the SIM868', view: 'boost', st: ['meter', 'solder'], focus: ['buck'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The SIM868 must not see 5 V. The STP28UD-3A (stock row 291) turns the 5 V rail into <b>4.0 V</b> on the VBAT rail, which feeds C1 and the SIM868’s PH2.0 lead as before. IN from Y13 / AA14, OUT to X35 / AA35.',
+    notes: ['<b>Set it first:</b> 5 V on IN only, nothing on OUT, turn the trimmer until OUT reads <b>4.00 V</b> (±0.05 V). Then wire the output.',
+      'It lies flat in the pocket where the 18650 holder was. Pad names as printed on the module (IN+ IN− OUT+ OUT−); swap the drawing if your module is laid out differently.',
+      'R4/R5 on GPIO1 now read the fixed 4.0 V, not a battery. The power bank’s charge level cannot be measured: watch its own LEDs.'],
+    warn: 'Measure before the output touches the board: these trimmers can start near the maximum, and anything above 4.4 V damages the SIM868.' },
   { phase: 'Lid', title: 'Lid board: button, LED, diode', view: 'lidboard', st: ['solder', 'cut'], focus: ['lidpcb', 'lidparts'], caseMode: 'ghost', lid: 'ghost', lidPose: 'flat', lidflat: true,
     lead: 'Shown flipped next to the base: you are looking at the link side. Holes are named rows A–H, columns 1–12 seen from the component side (parts up).',
     holes: [['C1–F1', '4-pin header (5V, GND, DIN, BTN), pins bent 90° outward over the edge'], ['C3 C6 E3 E6', 'tact switch (C3 + C6 are one side, E3 + E6 the other)'],
@@ -545,13 +557,13 @@ const steps = [
   { phase: 'Lid', title: 'Lid harness & speaker leads', view: 'harness', st: ['cut', 'solder'], focus: ['h1', 'lidpcb', 'spk'], caseMode: 'ghost', lid: 'ghost',
     lead: 'Four shortened F-F jumpers from H1 to the lid header, two cut jumpers to the speaker. Lengths include 25 mm slack for lifting and twisting the lid.',
     notes: ['Shorten a jumper: cut the stated length out of the middle, strip 4 mm, twist, solder, heat-shrink.', 'Bundle the six wires with one cable tie at H1.'] },
-  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'boost', 'sim', 'h2'], caseMode: 'ghost', lid: 'ghost',
+  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'pbank', 'buck', 'sim', 'h2'], caseMode: 'ghost', lid: 'ghost',
     lead: 'Test on the bench before anything goes into the case.',
-    notes: ['<b>No battery, modules unplugged:</b> beep AA1–Y1 (GND–5V), AA1–X35 (GND–VBAT), K23–AA1 (3V3–GND): none may beep.', '<b>Beep each link</b> end to end with the list in hand.',
-      '<b>Modules in, battery in, rocker on:</b> 5.0 V at Z19, 3.3 V at W3 and at J29 (H2), 3.7–4.2 V between L35 and L33 (SIM868 battery lead).', '<b>Flash:</b> rocker off, USB-C into the ESP32-S3.', 'Then: LED colours, button, voice line, PWRKEY pulse → SIM868 <b>NET</b> LED blinks fast, then slowly (about every 3 s = registered) → <span class="mono">AT</span> → <span class="mono">AT+CPIN?</span> → <span class="mono">AT+CREG?</span> (0,1) → call.'] },
+    notes: ['<b>Power bank unplugged, modules unplugged:</b> beep AA1–Y1 (GND–5V), AA1–X35 (GND–VBAT), Y1–X35 (5V–VBAT), K23–AA1 (3V3–GND): none may beep.', '<b>Beep each link</b> end to end with the list in hand.',
+      '<b>Modules in, power bank on, rocker on:</b> 5.0 V at Z19, 3.3 V at W3 and at J29 (H2), 4.0 V between L35 and L33 (SIM868 battery lead).', '<b>Flash:</b> rocker off, then USB-C into the ESP32-S3.', 'Then: LED colours, button, voice line, PWRKEY pulse → SIM868 <b>NET</b> LED blinks fast, then slowly (about every 3 s = registered) → <span class="mono">AT</span> → <span class="mono">AT+CPIN?</span> → <span class="mono">AT+CREG?</span> (0,1) → call.'] },
   { phase: 'Case', title: 'Everything clicks into the base', view: 'base', st: ['hands'], all: true, focus: [], caseMode: 'solid', lid: 'hidden', calls: 'base',
     lead: 'No screws anywhere. Each part has a snap or twist feature printed into the base.',
-    notes: ['<b>Geophone:</b> into its collar, into the floor cup, turn 30° clockwise until it clicks.', '<b>Battery holder:</b> press down between the 4 tabs.', '<b>Boost:</b> press into its pocket.', '<b>SIM868 board:</b> antenna edge up, slide it down into the two cradle clips at the back wall; antenna flat against the wall at the back left.', '<b>Main board:</b> push down onto the 4 posts until all 4 hooks click.'] },
+    notes: ['<b>Geophone:</b> into its collar, into the floor cup, turn 30° clockwise until it clicks.', '<b>Step-down:</b> lies flat in its pocket (where the 18650 holder was).', '<b>Power bank cable:</b> through the grommet in the left wall; the power bank stays outside.', '<b>SIM868 board:</b> antenna edge up, slide it down into the two cradle clips at the back wall; antenna flat against the wall at the back left.', '<b>Main board:</b> push down onto the 4 posts until all 4 hooks click.'] },
   { phase: 'Case', title: 'Close the lid (twist-lock)', view: 'lid', st: ['hands'], all: true, focus: ['h1', 'spk', 'lidpcb', 'lidparts'], caseMode: 'solid', lid: 'glass', calls: 'lid',
     lead: 'Plug the harness onto H1, line up the marks, push down, twist.',
     notes: ['Harness: 5V plug on Z19 (left end of H1), then GND, LED, BTN; speaker plugs on Z23 (+) and Z24 (−).', 'Line up the teal marks, press down, turn 25° clockwise until the detent clicks. Open: turn back and lift.'] },
@@ -562,7 +574,7 @@ const steps = [
     notes: ['<b>Lid ↔ base:</b> 3-lug bayonet, 25° turn, detent bump; 0.4 mm clearance.', '<b>Button:</b> printed flexure tab presses the tact switch.', '<b>LED:</b> 0.6 mm skin over the pixel glows through.', '<b>Print:</b> PETG, 0.2 mm layers, 2.5 mm walls, flat side down, no supports.'] }
 ];
 const CALLS = {
-  base: [['Board snap hooks ×4', v(-58.6, 14, -20)], ['Geophone twist-lock cup', v(55, 40, -48)], ['Battery snap tabs', v(17, 24, 23.9)], ['Boost pocket', v(-10.7, 7, 58.5)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)]],
+  base: [['Board snap hooks ×4', v(-58.6, 14, -20)], ['Geophone twist-lock cup', v(55, 40, -48)], ['Step-down pocket', v(19.8, 10, 23)], ['USB cable grommet', v(-76, 12, 42)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)]],
   lid: [['Lugs ride in L-slots', v(44, 34, 76)], ['Turn 25° → click', v(-76, 34, 44)]],
   closed: [['Twist-lock lid (25°)', v(76, 33, 44)], ['LED window', v(LED_X, 40, LED_Z)], ['Flexure button', v(BTN_X, 40, BTN_Z)], ['Speaker grille', v(-5, 40, 35)], ['Power rocker', v(91, 25, 6.5)], ['Feet ×3', v(0, -4, 62)]]
 };
@@ -653,7 +665,7 @@ function endHTML(h, lid, fallback) {
   }
   return `<span class="h">${h}</span><span class="what">${what(h, lid)}</span>`;
 }
-const ORDER = { bus: 0, bridge: 2, link: 3, lid: 3, top: 4, pair: 1, lead: 1, w05: 2, ff: 1, ffcut: 2, mf: 5 };
+const ORDER = { bus: 0, bridge: 2, link: 3, lid: 3, top: 4, pair: 1, lead: 1, w05: 2, usb: 2, ff: 1, ffcut: 2, mf: 5 };
 function render() {
   const s = steps[cur];
   document.getElementById('count').textContent = `step ${cur + 1} / ${steps.length}`;
@@ -673,7 +685,7 @@ function render() {
       h += `<div class="op"><span class="n">${cur + 1}.${n}</span><div><div class="end"><b>${id}</b> ${c.val} <span class="what">· ${c.note}</span></div><div class="end" style="margin-top:3px">${legs}</div></div></div>`; }); }
   if (ws.length) {
     const groups = [['bus', 'Bare rails & buses (solder side)'], ['bridge', 'Solder bridges (bend the leg onto the neighbour pin)'], ['link', 'Links (solder side)'], ['lid', 'Links (lid board, link side)'], ['top', 'Wires on the component side'], ['pair', 'Twisted pair'], ['lead', 'Off-board wires'], ['ff', 'Jumpers']];
-    const kindGroup = k => k === 'w05' ? 'lead' : (k === 'ffcut' || k === 'mf') ? 'ff' : k;
+    const kindGroup = k => (k === 'w05' || k === 'usb') ? 'lead' : (k === 'ffcut' || k === 'mf') ? 'ff' : k;
     groups.forEach(([g, title]) => {
       const list = ws.filter(w => kindGroup(w.kind) === g); if (!list.length) return;
       h += `<div class="sec">${title}</div>`;

@@ -143,7 +143,7 @@ const C = {
 };
 const NET = { gnd: '#3d4044', v5: '#c58c5c', vbat: '#b3665b', v33: '#c7ab5f', spi: '#6c8dae', i2s: '#8a7fae', uart: '#5d9a8b',
   audio: '#a6799a', line: '#c296b4', io: '#7c9a62', geoP: '#b07a6a', geoN: '#a7a49d' };
-const LEGEND = [['GND', NET.gnd], ['5 V', NET.v5], ['VBAT (switched)', NET.vbat], ['3V3', NET.v33], ['SPI (ADC)', NET.spi], ['I²S (audio)', NET.i2s],
+const LEGEND = [['GND', NET.gnd], ['5 V', NET.v5], ['VBAT (4.0 V, SIM868)', NET.vbat], ['3V3', NET.v33], ['SPI (ADC)', NET.spi], ['I²S (audio)', NET.i2s],
   ['UART (SIM868)', NET.uart], ['Line audio', NET.line], ['Speaker', NET.audio], ['LED / button', NET.io], ['Geophone', NET.geoP]];
 
 /* ======================= three setup ======================= */
@@ -213,22 +213,27 @@ P('T-CH2+', 'CH2+', '<b>Click</b> screw terminal', TX_, TY, TERMZ['CH2+'], 'term
 // PCM5102A DAC, flat in a pocket, its 6-pin header soldered pins UP, plus one pin on the L line-out pad
 const PX = -50, PZ = 6, MOD_PCB = 3, MOD_PIN_BASE = 7.1, PHZ = PZ - 12.5;
 [['VIN', -6.35], ['GND', -3.81], ['LCK', -1.27], ['DIN', 1.27], ['BCK', 3.81], ['SCK', 6.35]].forEach(([n, dx]) => P('PCM-' + n, n, '<b>PCM5102A</b> header', PX + dx, MOD_PIN_BASE, PHZ, 'up'));
-P('PCM-L', 'L out', '<b>PCM5102A</b> pin on the L pad', PX - 1.93, MOD_PIN_BASE, PZ + 3, 'up');
-// PAM8403 amp, flat in a pocket, 6 pins soldered UP
-const AX = -28, AZ = 8;
-P('PAM-LIN', 'L in', '<b>PAM8403</b>', AX - 5.08, MOD_PIN_BASE, AZ - 10.16, 'up'); P('PAM-GIN', '⏚ in', '<b>PAM8403</b> input ground', AX - 2.54, MOD_PIN_BASE, AZ - 10.16, 'up');
-P('PAM-5V', '+5V', '<b>PAM8403</b>', AX + 2.54, MOD_PIN_BASE, AZ - 10.16, 'up'); P('PAM-GND', 'GND', '<b>PAM8403</b> power ground', AX + 5.08, MOD_PIN_BASE, AZ - 10.16, 'up');
-P('PAM-LP', 'L+ out', '<b>PAM8403</b>', AX - 5.08, MOD_PIN_BASE, AZ + 10.16, 'up'); P('PAM-LM', 'L− out', '<b>PAM8403</b> (not ground!)', AX - 2.54, MOD_PIN_BASE, AZ + 10.16, 'up');
+P('PCM-JACK', 'line out', '<b>PCM5102A</b> 3.5 mm line-out jack', PX, MOD_PCB + 4.35, PZ + 14.8, 'pad');
+// ZK-502M Bluetooth / AUX amp (TPA3116D2, 5–24 V), on foam pads in the free front-right area.
+// Size unknown: drawn as a 36 × 30 mm placeholder. Power into its DC jack, speaker on its L screw-terminal pair (R stays empty), audio in on its AUX jack.
+const ZX = 45, ZZ = 39, ZY = 12;
+P('ZK-AUX', 'AUX in', '<b>ZK-502M</b> 3.5 mm AUX jack', ZX - 18, ZY + 4, ZZ - 2, 'pad');
+P('ZK-5V', 'jack +', '<b>ZK-502M</b> DC jack centre pin (+5 V): 5.5 × 2.1 plug, or its leg underneath', ZX - 12, ZY + 3, ZZ + 13, 'pad'); P('ZK-GND', 'jack −', '<b>ZK-502M</b> DC jack sleeve (−): 5.5 × 2.1 plug, or its leg underneath', ZX - 8, ZY + 3, ZZ + 13, 'pad');
+P('ZK-LP', 'L', '<b>ZK-502M</b> speaker terminal L (first of the pair)', ZX + 15, ZY + 3, ZZ - 10, 'pad'); P('ZK-LM', 'L', '<b>ZK-502M</b> speaker terminal L (second of the pair, not ground!)', ZX + 15, ZY + 3, ZZ - 6, 'pad');
 // SIM868 (Waveshare Pico-SIM868, Pico removed) on edge at the back wall: same as the perfboard guide
 const SIMZ = -68, SIMY0 = 9, SIMY1 = 33, ROWT = 29.9, ROWB = 12.1, SOCK = SIMZ + 8.5;
 const simpin = n => n <= 20 ? [34.4 - (n - 1) * 2.54, ROWT, SOCK] : [34.4 - (40 - n) * 2.54, ROWB, SOCK];
 [[1, 'GP0 / RXD'], [2, 'GP1 / TXD'], [18, 'GND'], [19, 'GP14 / PWRKEY'], [36, '3V3(OUT)']].forEach(([n, w]) => P('SIM-' + n, 'pin ' + n, `<b>SIM868</b> ${w}`, ...simpin(n), 'sock'));
 P('SIM-BAT+', 'BAT +', '<b>SIM868</b> PH2.0 battery socket (red)', 17.2, 24, -58, 'pad'); P('SIM-BAT-', 'BAT −', '<b>SIM868</b> PH2.0 battery socket (black)', 14.8, 24, -58, 'pad');
-// power parts (same places as the perfboard guide)
-P('B-IN+', 'IN+', '<b>Boost</b> pad', 24.5, 4.6, 54, 'pad'); P('B-IN-', 'IN−', '<b>Boost</b> pad', 24.5, 4.6, 63, 'pad');
-P('B-OUT+', 'OUT+', '<b>Boost</b> pad (5.0 V)', -8.5, 4.6, 54, 'pad'); P('B-OUT-', 'OUT−', '<b>Boost</b> pad', -8.5, 4.6, 63, 'pad');
+// power: the power bank (outside the case) is the only source. Its cut USB-A cable enters through a grommet in the left wall:
+// red → rocker → 5 V star splice, black → GND star splice (both with C3, in the old boost pocket).
+// The SIM868 gets 4.0 V from an STP28UD-3A step-down lying where the 18650 holder used to be.
+P('USB+', 'USB red', '<b>USB cable</b> red core (power bank 5 V), just inside the grommet', -73.0, 6.5, 39.6, 'pad');
+P('USB-', 'USB black', '<b>USB cable</b> black core (power bank GND), just inside the grommet', -74.0, 5.5, 41.4, 'pad');
+P('SP+', '5V ✱', '<b>5 V splice</b> (rocker lead + C3 + + step-down IN+ + 4 leads)', -8.5, 4.6, 54, 'pad'); P('SP-', 'GND ✱', '<b>GND splice</b> (USB black + C3 − + step-down IN− + 3 leads)', -8.5, 4.6, 63, 'pad');
 P('R-1', 'pin 1', '<b>Rocker</b> lug', 65.5, 11.7, 4.5, 'pad'); P('R-2', 'pin 2', '<b>Rocker</b> lug', 65.5, 18.7, 8.5, 'pad');
-P('H+', '+', '<b>18650 holder</b> red lead', 32, 12, 32, 'pad'); P('H-', '−', '<b>18650 holder</b> black lead', 32, 12, 39, 'pad');
+P('BK-IN+', 'IN+', '<b>Step-down</b> pad', -30, 4.6, 32, 'pad'); P('BK-IN-', 'IN−', '<b>Step-down</b> pad', -30, 4.6, 39, 'pad');
+P('BK-OUT+', 'OUT+', '<b>Step-down</b> pad (4.0 V)', 17, 4.6, 32, 'pad'); P('BK-OUT-', 'OUT−', '<b>Step-down</b> pad', 17, 4.6, 39, 'pad');
 P('G+', '+', '<b>SM-24</b> tab', 59, 35.5, -30, 'pad'); P('G-', '−', '<b>SM-24</b> tab', 51, 35.5, -30, 'pad');
 // lid parts (lid coordinates = world coordinates while the lid is on)
 const LED_X = 31, LED_Z = 1.27, BTN_X = 14.92, BTN_Z = -1.27, PADX = LED_X - 7.5, PADY = 34.2;
@@ -237,29 +242,29 @@ P('L-5V', '+5V', '<b>WS2812B</b> pad', PADX, PADY, LED_Z - 3.3, 'pad', true); P(
 P('L-GND', 'GND', '<b>WS2812B</b> pad', PADX, PADY, LED_Z + 3.3, 'pad', true);
 P('BTN-1', 'leg 1', '<b>Button</b>', BTN_X - 3.25, 30.9, BTN_Z - 2.25, 'pad', true); P('BTN-4', 'leg 4', '<b>Button</b> (diagonal)', BTN_X + 3.25, 30.9, BTN_Z + 2.25, 'pad', true);
 // mid-air junctions: boost lead (female) meets lid lead (male); housing runs along z from 24 to 52, joint at 38
-P('JN5b', '5V ⇄', '<b>Lid 5V junction</b> (female, boost side)', 22, 26, 52, 'jn'); P('JN5l', '⇄ 5V', '<b>Lid 5V junction</b> (male, lid side)', 22, 26, 24, 'jn');
-P('JNGb', 'GND ⇄', '<b>Lid GND junction</b> (female, boost side)', 25.5, 26, 52, 'jn'); P('JNGl', '⇄ GND', '<b>Lid GND junction</b> (male, lid side)', 25.5, 26, 24, 'jn');
+P('JN5b', '5V ⇄', '<b>Lid 5V junction</b> (female, splice side)', 22, 26, 52, 'jn'); P('JN5l', '⇄ 5V', '<b>Lid 5V junction</b> (male, lid side)', 22, 26, 24, 'jn');
+P('JNGb', 'GND ⇄', '<b>Lid GND junction</b> (female, splice side)', 25.5, 26, 52, 'jn'); P('JNGl', '⇄ GND', '<b>Lid GND junction</b> (male, lid side)', 25.5, 26, 24, 'jn');
 
 /* ======================= steps (ids) ======================= */
-const S = { start: 0, pins: 1, mount: 2, power: 3, boost: 4, spi: 5, geo: 6, audio: 7, sim: 8, lid: 9, test: 10, close: 11, flat: 12, mock: 13 };
+const S = { start: 0, pins: 1, mount: 2, power: 3, boost: 4, spi: 5, geo: 6, sim: 7, lid: 8, audio: 9, test: 10, close: 11, flat: 12, mock: 13 };
 
 /* ======================= wires ======================= */
 const wires = [];
 function Wr(step, kind, net, a, b, o = {}) { wires.push(Object.assign({ id: wires.length, step, kind, net, a, b }, o)); }
-// --- power (soldered once)
-Wr(S.power, 'lead', 'vbat', 'H+', 'R-1', { pts: [[32, 12, 32], [40, 8, 32], [45, 8, 20.5], [45, 11.7, 10], [58, 11.7, 4.5], [65.5, 11.7, 4.5]], note: 'battery + to the switch' });
-Wr(S.power, 'w05', 'vbat', 'R-2', 'B-IN+', { pts: [[65.5, 18.7, 8.5], [50, 18.7, 8.5], [50, 2.5, 14], [50, 2.5, 50], [30, 2.5, 55], [24.5, 4.6, 54]], note: 'switched VBAT to the boost input' });
-Wr(S.power, 'lead', 'gnd', 'H-', 'B-IN-', { pts: [[32, 12, 39], [37, 6, 42], [37, 2.5, 58], [30, 2.5, 63], [24.5, 4.6, 63]], note: 'battery − to the boost input' });
-Wr(S.power, 'ph', 'vbat', 'B-IN+', 'SIM-BAT+', { pts: [[24.5, 4.6, 54], [33, 2, 50], [47, 2, 40], [47, 2, -6], [34, 2, -12], [32.5, 2, -40], [18, 2, -49], [17.2, 22, -52], [17.2, 24, -58]], note: 'SIM868 power straight from the switched cell, never 5 V' });
-Wr(S.power, 'ph', 'gnd', 'B-IN-', 'SIM-BAT-', { pts: [[24.5, 4.6, 63], [34.5, 3.4, 52], [48.6, 3.4, 40], [48.6, 3.4, -7], [35.6, 3.4, -13.4], [34.1, 3.4, -40.5], [16.5, 3.4, -50.5], [14.8, 22, -52], [14.8, 24, -58]], note: 'SIM868 ground (also its UART ground)' });
-// --- boost output leads (soldered at the boost, female end plugs onto a pin)
-Wr(S.boost, 'pig', 'v5', 'B-OUT+', 'J1-21', { mv: 'y8 z50 x10 y23 z21 y2.5 z-12 xB y29 zB', note: '5 V into the ESP32-S3 5V pin' });
-Wr(S.boost, 'pig', 'gnd', 'B-OUT-', 'J1-22', { mv: 'y9 z51 x12 y24 z21.5 y3.2 z-12.6 xB y30 zB', note: 'main ground into the ESP32-S3' });
-Wr(S.boost, 'pig', 'v5', 'B-OUT+', 'PCM-VIN', { mv: 'y8.5 z49 x-56.5 y24 zB xB', note: 'DAC supply' });
-Wr(S.boost, 'pig', 'v5', 'B-OUT+', 'PAM-5V', { mv: 'y9.5 z48 x-25.5 y24.5 zB xB', note: 'amp supply' });
-Wr(S.boost, 'pig', 'gnd', 'B-OUT-', 'PAM-GND', { mv: 'y10 z50.5 x-23 y25 zB xB', note: 'amp power ground, straight from the boost' });
-Wr(S.boost, 'pig', 'v5', 'B-OUT+', 'JN5b', { mv: 'y11 x22 yB z54', note: 'lid LED 5 V (its other half comes with the lid in step 10)' });
-Wr(S.boost, 'pig', 'gnd', 'B-OUT-', 'JNGb', { mv: 'y12 z56 x25.5 yB', note: 'lid ground (mates with the lid lead in step 10)' });
+// --- step 3: power bank cable → rocker, step-down → SIM868 battery socket (4.0 V, never 5 V)
+Wr(S.power, 'usb', 'v5', 'USB+', 'R-1', { pts: [[-73.0, 6.5, 39.6], [-62, 5, 52], [-38, 9, 73], [30, 9, 73], [45, 8, 40], [45, 8, 20.5], [45, 11.7, 10], [58, 11.7, 4.5], [65.5, 11.7, 4.5]], note: 'power bank 5 V into the main switch' });
+Wr(S.power, 'ph', 'vbat', 'BK-OUT+', 'SIM-BAT+', { pts: [[17, 4.6, 32], [24, 7, 32], [41, 5, 20], [41, 2, -6], [34, 2, -12], [32.5, 2, -40], [18, 2, -49], [17.2, 22, -52], [17.2, 24, -58]], note: '4.0 V into the SIM868, never 5 V' });
+Wr(S.power, 'ph', 'gnd', 'BK-OUT-', 'SIM-BAT-', { pts: [[17, 4.6, 39], [26, 6, 42], [48.6, 3.4, 40], [48.6, 3.4, -7], [35.6, 3.4, -13.4], [34.1, 3.4, -40.5], [16.5, 3.4, -50.5], [14.8, 22, -52], [14.8, 24, -58]], note: 'SIM868 ground' });
+// --- step 4: everything that meets in the two star splices (soldered in one go), female ends plug onto pins
+Wr(S.boost, 'w05', 'v5', 'R-2', 'SP+', { pts: [[65.5, 18.7, 8.5], [50, 18.7, 8.5], [47, 10, 24], [40, 10, 42], [20, 9, 46], [0, 8, 50], [-8.5, 4.6, 54]], note: 'switched 5 V into the 5 V splice' });
+Wr(S.boost, 'usb', 'gnd', 'USB-', 'SP-', { pts: [[-74.0, 5.5, 41.4], [-61, 3.6, 52], [-50, 3.6, 65], [-14, 6, 65], [-8.5, 4.6, 63]], note: 'power bank GND into the GND splice' });
+Wr(S.boost, 'w05', 'v5', 'SP+', 'BK-IN+', { pts: [[-8.5, 4.6, 54], [-12, 7.5, 51], [-33, 7.5, 46], [-33, 7.5, 32], [-30, 4.6, 32]], note: '5 V into the step-down' });
+Wr(S.boost, 'w05', 'gnd', 'SP-', 'BK-IN-', { pts: [[-8.5, 4.6, 63], [-11, 7, 68], [-26, 7, 68], [-36, 6.5, 50], [-36, 6.5, 39], [-30, 4.6, 39]], note: 'ground into the step-down' });
+Wr(S.boost, 'pig', 'v5', 'SP+', 'J1-21', { mv: 'y8 z50 x10 y23 z21 y2.5 z-12 xB y29 zB', note: '5 V into the ESP32-S3 5V pin' });
+Wr(S.boost, 'pig', 'gnd', 'SP-', 'J1-22', { mv: 'y9 z51 x12 y24 z21.5 y3.2 z-12.6 xB y30 zB', note: 'main ground into the ESP32-S3' });
+Wr(S.boost, 'pig', 'v5', 'SP+', 'PCM-VIN', { mv: 'y8.5 z49 x-56.5 y24 zB xB', note: 'DAC supply' });
+Wr(S.boost, 'pig', 'v5', 'SP+', 'JN5b', { mv: 'y11 x22 yB z54', note: 'lid LED 5 V (its other half comes with the lid in step 9)' });
+Wr(S.boost, 'pig', 'gnd', 'SP-', 'JNGb', { mv: 'y12 z56 x25.5 yB', note: 'lid ground (mates with the lid lead in step 9)' });
 // --- ESP32-S3 ↔ Click (F-F)
 [['J1-18', 'CK-SCK', 'spi', 'SCK (GPIO12)'], ['J1-19', 'CK-SDO', 'spi', 'MISO: Click SDO → GPIO13'], ['J1-20', 'CK-SDI', 'spi', 'MOSI: GPIO14 → Click SDI'],
  ['J1-17', 'CK-CS1', 'spi', 'ADC chip-select (GPIO11)'], ['J1-15', 'CK-CS2', 'spi', 'clock-chip select (GPIO9)'], ['J1-16', 'CK-INT', 'spi', 'DRDY, active low (GPIO10)'],
@@ -276,8 +281,11 @@ Wr(S.geo, 'fterm', 'gnd', 'CK-GNDf', 'T-CH2+', { mv: 'y2.5 z22 x34 y' + TY + ' z
 [['J1-4', 'PCM-BCK', 'bit clock (GPIO4)'], ['J1-5', 'PCM-LCK', 'word clock (GPIO5)'], ['J1-6', 'PCM-DIN', 'data (GPIO6)']].forEach(([a, b, note]) =>
   Wr(S.audio, 'ff', 'i2s', a, b, { mv: 'y28.5~ zB xB', note }));
 Wr(S.audio, 'ff', 'gnd', 'J3-1', 'PCM-GND', { mv: 'y31.5 zB xB', note: 'DAC ground' });
-Wr(S.audio, 'ff', 'gnd', 'PCM-SCK', 'PAM-GIN', { mv: 'y24 zB xB', note: 'SCK must sit at ground: the amp’s input ground does it' });
-Wr(S.audio, 'ff', 'line', 'PCM-L', 'PAM-LIN', { mv: 'y25.5 xB zB', note: 'DAC left line-out → amp left input' });
+Wr(S.audio, 'aux', 'line', 'PCM-JACK', 'ZK-AUX', { pts: [[PX, MOD_PCB + 4.35, PZ + 14.8], [PX, 9, PZ + 19], [-45, 22, 22], [20, 22, 20], [ZX - 22, ZY + 4, ZZ - 2], [ZX - 18, ZY + 4, ZZ - 2]], note: 'DAC line-out → amp AUX in (3.5 mm cable)' });
+Wr(S.audio, 'pterm', 'v5', 'SP+', 'ZK-5V', { pts: [[-8.5, 4.6, 54], [-2, 9, 57.5], [ZX - 15, 9, 57.5], [ZX - 12, ZY + 3, ZZ + 13]], note: 'amp supply into the DC jack centre (+): lead from the 5 V splice (step 5)' });
+Wr(S.audio, 'pterm', 'gnd', 'SP-', 'ZK-GND', { pts: [[-8.5, 4.6, 63], [-2, 8, 60], [ZX - 10, 8, 60], [ZX - 8, ZY + 3, ZZ + 13]], note: 'amp ground into the DC jack sleeve (−): lead from the GND splice (step 5)' });
+Wr(S.audio, 'sterm', 'audio', 'S+', 'ZK-LP', { pts: [[-24.5, 32, 31], [-27, 28, 20], [50, 28, 20], [ZX + 15, 22, ZZ - 14], [ZX + 15, ZY + 3, ZZ - 10]], harness: true, note: 'speaker +' });
+Wr(S.audio, 'sterm', 'audio', 'S-', 'ZK-LM', { pts: [[-24.5, 32, 39], [-28.5, 29, 21.5], [52, 29, 21.5], [ZX + 16.5, 22, ZZ - 9], [ZX + 15, ZY + 3, ZZ - 6]], harness: true, note: 'speaker −, NOT ground (bridged output)' });
 // --- SIM868 (M-F: female end on the ESP32-S3, male end straight into the SIM868 socket)
 [['J1-9', 'SIM-19', 'uart', 'PWRKEY: HIGH 1.5 s = on / off (GPIO16)'], ['J1-10', 'SIM-1', 'uart', 'ESP TX (GPIO17) → SIM RXD'], ['J1-11', 'SIM-2', 'uart', 'SIM TXD → ESP RX (GPIO18)'],
  ['J1-2', 'SIM-36', 'v33', '3V3 for the board’s level shifter'], ['J3-22', 'SIM-18', 'gnd', 'UART ground']].forEach(([a, b, n, note]) =>
@@ -288,8 +296,6 @@ Wr(S.lid, 'pig', 'io', 'BTN-1', 'J1-7', { mv: 'z-10.3 y30.6 xB zB', harness: tru
 Wr(S.lid, 'pigm', 'v5', 'L-5V', 'JN5l', { pts: [[PADX, PADY, LED_Z - 3.3], [19, 33, LED_Z - 3.3], [19, 31, 10], [19.5, 29, 19], [22, 26, 20], [22, 26, 24]], diode: true, harness: true, note: 'pixel +5V through the 1N4001 (stripe toward the pixel)' });
 Wr(S.lid, 'pigm', 'gnd', 'L-GND', 'JNGl', { pts: [[PADX, PADY, LED_Z + 3.3], [20.5, 33, 6], [20.5, 31, 12], [21, 29, 18.5], [25.5, 26, 20], [25.5, 26, 24]], harness: true, note: 'pixel ground' });
 Wr(S.lid, 'lidlocal', 'gnd', 'BTN-4', 'L-GND', { pts: [[BTN_X + 3.25, 30.9, BTN_Z + 2.25], [BTN_X + 3.25, 33, 2.5], [21, PADY, LED_Z + 3.3], [PADX, PADY, LED_Z + 3.3]], note: 'button leg 4 → pixel GND pad' });
-Wr(S.lid, 'pig', 'audio', 'S+', 'PAM-LP', { mv: 'x-27 y26 z22 xB zB', harness: true, note: 'speaker +' });
-Wr(S.lid, 'pig', 'audio', 'S-', 'PAM-LM', { mv: 'x-28.5 y27 z23 xB zB', harness: true, note: 'speaker −, NOT ground (bridged output)' });
 
 /* ======================= parts registry ======================= */
 const parts = {};
@@ -318,12 +324,13 @@ function part(id, appear, label, labelAt, parent) { const g = new THREE.Group();
   [-2.5, 0, 2.5].forEach(dx => g.add(cyl(0.7, 0.2, '#c9cdd0', PX - 0.57 + dx + 0.57, MOD_PCB + 1.6, PZ + 3, 10)));
   g.add(boxB(15.24, 2.5, 2.5, C.socket, PX, MOD_PCB + 1.6, PHZ));
   ['VIN', 'GND', 'LCK', 'DIN', 'BCK', 'SCK'].forEach(n => g.add(boxB(0.64, 6, 0.64, C.pin, PIN['PCM-' + n].base.x, MOD_PIN_BASE, PHZ, METAL)));
-  g.add(boxB(2.54, 2.5, 2.5, C.socket, PIN['PCM-L'].base.x, MOD_PCB + 1.6, PIN['PCM-L'].base.z)); g.add(boxB(0.64, 6, 0.64, C.pin, PIN['PCM-L'].base.x, MOD_PIN_BASE, PIN['PCM-L'].base.z, METAL)); }
-/* ---- PAM8403 ---- */
-{ const g = part('pam', S.pins, 'PAM8403 amp (pins up)', v(AX, 26, AZ + 4));
-  g.add(boxB(18, 1.6, 22, C.pam, AX, MOD_PCB, AZ)); g.add(boxB(5, 1.2, 4, C.chip, AX, MOD_PCB + 1.6, AZ)); g.add(boxB(3, 2.5, 3, '#8a8f93', AX - 5, MOD_PCB + 1.6, AZ - 4));
-  ['PAM-LIN', 'PAM-GIN', 'PAM-5V', 'PAM-GND', 'PAM-LP', 'PAM-LM'].forEach(id => { const b = PIN[id].base;
-    g.add(boxB(2.54, 2.5, 2.5, C.socket, b.x, MOD_PCB + 1.6, b.z)); g.add(boxB(0.64, 6, 0.64, C.pin, b.x, MOD_PIN_BASE, b.z, METAL)); }); }
+}
+/* ---- ZK-502M (placeholder size), on 4 foam pads ---- */
+{ const g = part('zk', S.audio, 'ZK-502M amp (size: measure yours)', v(ZX, 34, ZZ));
+  g.add(boxB(36, 1.6, 30, C.pam, ZX, ZY, ZZ)); g.add(boxB(9, 2, 9, C.chip, ZX + 2, ZY + 1.6, ZZ - 2)); g.add(boxB(8, 1, 6, '#2b5d8a', ZX - 6, ZY + 1.6, ZZ - 9));
+  g.add(boxB(6, 5, 7, '#2f3133', ZX - 15, ZY + 1.6, ZZ - 2)); g.add(cyl(3.5, 9, '#3a3d40', ZX + 6, ZY + 1.6, ZZ + 9, 20));
+  g.add(boxB(9, 7, 6, '#3d6fb0', ZX - 10, ZY + 1.6, ZZ + 12)); g.add(boxB(6, 7, 10, '#3d6fb0', ZX + 15, ZY + 1.6, ZZ - 8));
+  [[37, 28], [57, 28], [35, 50], [59, 50]].forEach(([x, z]) => g.add(boxB(5, ZY, 5, '#e4ddc8', x, 0, z))); }
 /* ---- SIM868 at the back wall (same as the perfboard guide) ---- */
 { const g = part('sim', S.mount, 'SIM868 board (Pico removed) · back wall', v(-2, 44, -70)); const yc = (SIMY0 + SIMY1) / 2;
   g.add(box(76.15, SIMY1 - SIMY0, 1.6, C.sim, -1.7, yc, SIMZ - 0.8));
@@ -346,21 +353,30 @@ function part(id, appear, label, labelAt, parent) { const g = new THREE.Group();
   const col = mesh(new THREE.LatheGeometry([[12.8, 0], [15.2, 0], [15.2, 10], [12.8, 10]].map(p => new THREE.Vector2(p[0], p[1])), 48), C.collar, { side: THREE.DoubleSide }); col.position.set(55, 0, -30); g.add(col);
   [30, 150, 270].forEach(a => { const t = a * Math.PI / 180; g.add(boxB(3, 2, 3, C.collar, 55 + 16 * Math.sin(t), 5.5, -30 + 16 * Math.cos(t))); }); }
 /* ---- battery, rocker, boost ---- */
-{ const g = part('batt', S.mount, '18650 cell + holder', v(-6, 25, 36));
-  g.add(boxB(77, 3, 21, C.holder, -6.5, 0, 35.5)); g.add(boxB(3, 20, 21, C.holder, -43.5, 0, 35.5)); g.add(boxB(3, 20, 21, C.holder, 30.5, 0, 35.5));
-  g.add(boxB(77, 12, 1.6, C.holder, -6.5, 0, 25.8)); g.add(boxB(77, 12, 1.6, C.holder, -6.5, 0, 45.2));
-  const cell = mesh(new THREE.CylinderGeometry(9.2, 9.2, 65, 32), C.cell); cell.rotation.z = Math.PI / 2; cell.position.set(-6.5, 11.5, 35.5); g.add(cell);
-  const band = mesh(new THREE.CylinderGeometry(9.3, 9.3, 18, 32), '#7a9a96'); band.rotation.z = Math.PI / 2; band.position.set(-6.5, 11.5, 35.5); g.add(band); }
+/* ---- STP28UD-3A step-down (5 V → 4.0 V for the SIM868), lying where the 18650 holder used to be; 1000 µF on its output ---- */
+{ const g = part('buck', S.mount, 'Step-down STP28UD-3A → 4.0 V (SIM868)', v(-6, 22, 36));
+  g.add(boxB(50, 1.6, 24, C.boost, -6.5, 3, 35.5));
+  g.add(boxB(11, 6, 11, '#3c3f42', -17, 4.6, 35.5)); g.add(boxB(11, 6, 11, '#3c3f42', -2, 4.6, 35.5));
+  g.add(cyl(3.2, 8, C.cap, -26, 4.6, 26)); g.add(boxB(4.5, 1.6, 9.5, '#5f7f9e', -7.5, 4.6, 44)); g.add(boxB(5, 1.2, 4, C.chip, -7.5, 4.6, 27));
+  g.add(cyl(4.5, 13, C.cap, 9.5, 4.6, 35.5)); g.add(cyl(4.52, 0.3, C.capTop, 9.5, 17.6, 35.5)); g.add(boxB(0.6, 12, 1.4, '#d5d9dc', 14, 5.1, 35.5));
+  [[-30, 32], [-30, 39], [17, 32], [17, 39]].forEach(([x, z]) => g.add(cyl(1, 0.2, '#c9cdd0', x, 4.6, z, 10))); }
 { const g = part('rocker', S.mount, 'Power rocker', v(76, 30, 7));
   g.add(boxB(20, 17, 12, C.rocker, 76, 6, 6.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 10.5, 4.5)); g.add(boxB(1, 2.5, 4, '#c9cdd0', 65.5, 17.5, 8.5));
   g.add(boxB(2.4, 21, 15, C.rocker, 89.2, 4, 6.5)); const pad = box(2.2, 16, 11, '#6a8f8b', 90.8, 14.5, 6.5); pad.rotation.z = 0.12; g.add(pad); }
-{ const g = part('boost', S.mount, 'DC-DC boost → 5.0 V', v(8, 16, 60));
-  g.add(boxB(36, 1.6, 17, C.boost, 8, 3, 58.5)); g.add(boxB(7, 4, 7, '#3c3f42', 6, 4.6, 58.5)); g.add(boxB(4, 1.2, 3, C.chip, 14, 4.6, 58.5));
-  g.add(boxB(5, 5, 9.5, '#5f7f9e', -2, 4.6, 58.5));
-  [54, 63].forEach(z => { g.add(cyl(0.9, 0.2, '#c9cdd0', 24.5, 4.6, z, 10)); g.add(cyl(0.9, 0.2, '#c9cdd0', -8.5, 4.6, z, 10)); });
-  // C3 470 µF standing next to the output pads, legs onto OUT+ / OUT−
+/* ---- 5 V / GND star splices with C3, lying in the old boost pocket ---- */
+{ const g = part('splice', S.boost, '5 V + GND splices · C3', v(-6, 16, 60));
+  [54, 63].forEach(z => { const sl = mesh(new THREE.CylinderGeometry(2.2, 2.2, 14, 14), '#2f3133'); sl.rotation.z = Math.PI / 2; sl.position.set(-1.5, 4.6, z); g.add(sl); });
+  // C3 470 µF standing next to the splices, legs into them
   g.add(cyl(4, 12, C.cap, -15.5, 0, 58.5)); g.add(cyl(4.02, 0.3, C.capTop, -15.5, 12, 58.5)); g.add(boxB(1.4, 11, 0.6, '#d5d9dc', -15.5, 0.5, 62.5));
   g.add(boxB(6, 0.5, 0.5, '#b9bec2', -11.5, 4.7, 55)); g.add(boxB(6, 0.5, 0.5, '#b9bec2', -11.5, 4.7, 62)); }
+/* ---- power bank OUTSIDE the case (size unknown: generic box), USB-A cable through a grommet in the left wall ---- */
+{ const g = part('pbank', S.power,'Power bank (outside the case) · USB OUT → 5 V', v(-150, 30, 58));
+  g.add(boxB(62, 22, 92, C.boost, -150, FLOOR_Y, 58)); g.add(boxB(1, 6, 13, '#2f3133', -118.6, 4, 58));
+  g.add(cyl(1.6, 0.6, '#9fd1c9', -135, FLOOR_Y + 22, 20, 12)); g.add(cyl(1.6, 0.6, '#9fd1c9', -140, FLOOR_Y + 22, 20, 12));
+  g.add(boxB(14, 4.6, 12, '#d8d6d0', -111.5, 4.7, 58));
+  g.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([v(-104.5, 7, 58), v(-95, 6.5, 52), v(-84, 6, 45)]), 30, 1.6, 10, false), '#2f3133'));
+  const gr = mesh(new THREE.TorusGeometry(2.4, 0.9, 8, 20), '#3a3c3e'); gr.position.set(-75.9, 6, 42.0); gr.rotation.y = Math.atan2(-0.875, 0.484); g.add(gr);
+  g.add(mesh(new THREE.TubeGeometry(new THREE.LineCurve3(v(-84, 6, 45), v(-73.5, 6, 40.6)), 4, 1.6, 10, false), '#2f3133')); }
 
 /* ======================= case ======================= */
 const caseMeshes = [], lidMeshes = [];
@@ -385,10 +401,10 @@ const baseG = new THREE.Group(); scene.add(baseG);
   // shallow pockets for the DAC and the amp
   const pocket = (x, z, w, d) => { [[0, -d / 2 - 0.8, w + 3.2, 1.6], [0, d / 2 + 0.8, w + 3.2, 1.6]].forEach(([dx, dz, ww, dd]) => baseG.add(regCase(boxB(ww, 5, dd, C.print, x + dx, 0, z + dz), caseMeshes)));
     [[-w / 2 - 0.8, 0], [w / 2 + 0.8, 0]].forEach(([dx]) => baseG.add(regCase(boxB(1.6, 5, d, C.print, x + dx, 0, z), caseMeshes))); baseG.add(regCase(boxB(w, MOD_PCB, d, C.print2, x, 0, z), caseMeshes)); };
-  pocket(PX, PZ, 20, 30); pocket(AX, AZ, 18, 22);
-  // battery tabs, boost pocket, geophone cup (unchanged)
-  [[-30, 23.9, 1], [17, 23.9, 1], [-30, 47.1, -1], [17, 47.1, -1]].forEach(([x, z, n]) => {
-    baseG.add(regCase(boxB(8, 21.5, 1.6, C.print, x, 0, z), caseMeshes)); baseG.add(regCase(boxB(8, 1.4, 2.6, C.print2, x, 20.1, z + n * 1.1), caseMeshes)); });
+  pocket(PX, PZ, 20, 30);
+  // step-down pocket (replaces the 18650 holder tabs), splice pocket (the old boost pocket), geophone cup (unchanged)
+  baseG.add(regCase(boxB(53.2, 4, 1.6, C.print, -6.5, 0, 22.7), caseMeshes)); baseG.add(regCase(boxB(53.2, 4, 1.6, C.print, -6.5, 0, 48.3), caseMeshes));
+  baseG.add(regCase(boxB(1.6, 4, 24, C.print, -32.8, 0, 35.5), caseMeshes)); baseG.add(regCase(boxB(1.6, 4, 24, C.print, 19.8, 0, 35.5), caseMeshes));
   baseG.add(regCase(boxB(38, 4, 1.4, C.print, 8, 0, 49.3), caseMeshes)); baseG.add(regCase(boxB(38, 4, 1.4, C.print, 8, 0, 67.7), caseMeshes));
   baseG.add(regCase(boxB(1.4, 4, 19.8, C.print, -10.7, 0, 58.5), caseMeshes));
   const cup = mesh(new THREE.LatheGeometry([[15.6, 0], [19, 0], [19, 9], [15.6, 9]].map(p => new THREE.Vector2(p[0], p[1])), 64), C.print, { side: THREE.DoubleSide });
@@ -461,13 +477,17 @@ function spec(w) {
   if (k === 'loop') return `jumper offcut ${r5(L + 10)} mm, strip 5 mm both ends`;
   if (k === 'w05') return `0.5 mm² ${w.net === 'gnd' ? 'black' : 'red'}, ${r5(L + 15)} mm, strip 4 mm, tin`;
   if (k === 'lead') return `holder lead, trim to ${r5(L + 10)} mm, strip 4 mm`;
+  if (k === 'aux') return '3.5 mm male–male AUX cable (shortest you have); coil the slack and tie it';
+  if (k === 'pterm') return `0.5 mm² ${w.net === 'gnd' ? 'black' : 'red'}, ${r5(L + 20)} mm: soldered into the splice in step 5; other end to a 5.5 × 2.1 DC plug (${w.net === 'gnd' ? 'sleeve' : 'centre pin'}) or the jack leg underneath`;
+  if (k === 'sterm') return `jumper offcut or 0.22 core, ${r5(L + 25)} mm: solder to the speaker tab, strip 5 mm into the screw terminal`;
+  if (k === 'usb') return `USB-A cable from the power bank, ${w.net === 'gnd' ? 'black' : 'red'} core, ${r5(L + 15)} mm past the grommet; strip 4 mm, tin (white + green cut short, taped)`;
   if (k === 'ph') return `PH2.0 plug lead + 0.5 mm² ${w.net === 'gnd' ? 'black' : 'red'} extension, ${r5(L + 20)} mm total; solder splice + heat-shrink`;
   if (k === 'lidlocal') return `jumper offcut ${r5(L + 8)} mm, solder both ends`;
   return '';
 }
 const wireRoot = new THREE.Group(); scene.add(wireRoot);
 const lidWireRoot = new THREE.Group(); lidG.add(lidWireRoot);
-const RAD = { ff: 0.62, mf: 0.62, pig: 0.62, pigm: 0.62, fterm: 0.62, pair: 0.38, loop: 0.45, w05: 0.85, lead: 0.6, ph: 0.6, lidlocal: 0.45 };
+const RAD = { ff: 0.62, mf: 0.62, pig: 0.62, pigm: 0.62, fterm: 0.62, pair: 0.38, loop: 0.45, w05: 0.85, usb: 0.75, aux: 1.4, pterm: 0.85, sterm: 0.55, lead: 0.6, ph: 0.6, lidlocal: 0.45 };
 const laneCount = {};
 wires.forEach(w => { const key = w.step + w.kind; w.lane = laneCount[key] = (laneCount[key] === undefined ? 0 : laneCount[key] + 1); });
 function housing(pin, g) {
@@ -524,8 +544,8 @@ const ST = { solder: ['solder', 'Soldering station'], cut: ['cut', 'Side cutters
   hands: ['hands', 'Hands only'], plug: ['plug', 'Plug jumpers'], laptop: ['laptop', 'Laptop + USB-C'] };
 const VIEW = {
   overview: { t: [0, 10, 0], r: 380, th: 28, ph: 52 }, pins: { t: [-40, 8, 4], r: 150, th: 18, ph: 46 }, base: { t: [0, 10, 0], r: 340, th: 18, ph: 44 },
-  power: { t: [30, 8, 10], r: 260, th: 58, ph: 46 }, boost: { t: [-12, 12, 18], r: 300, th: 22, ph: 50 }, spi: { t: [-14, 12, -4], r: 205, th: 32, ph: 66 },
-  geo: { t: [36, 26, -8], r: 160, th: 58, ph: 52 }, audio: { t: [-40, 16, 0], r: 175, th: -22, ph: 50 }, sim: { t: [0, 20, -40], r: 250, th: 14, ph: 46 },
+  power: { t: [-30, 8, 30], r: 380, th: 8, ph: 50 }, boost: { t: [-10, 8, 45], r: 210, th: 10, ph: 52 }, spi: { t: [-14, 12, -4], r: 205, th: 32, ph: 66 },
+  geo: { t: [36, 26, -8], r: 160, th: 58, ph: 52 }, audio: { t: [0, 18, 20], r: 260, th: 20, ph: 52 }, sim: { t: [0, 20, -40], r: 250, th: 14, ph: 46 },
   lid: { t: [-4, 26, 2], r: 300, th: 26, ph: 52 }, check: { t: [0, 12, -5], r: 340, th: 20, ph: 46 }, lidon: { t: [0, 22, 0], r: 360, th: 22, ph: 55 },
   layflat: { t: [98, 0, 0], r: 480, th: 0, ph: 38 }, closed: { t: [0, 16, 0], r: 330, th: 30, ph: 60 }
 };
@@ -535,56 +555,68 @@ const steps = [
     notes: ['<b>Every connection names the exact pin at both ends</b>, e.g. <span class="mono">J1-18</span> = ESP32-S3 header J1, pin 18 (GPIO12).',
       '<b>The ESP32-S3 lies upside down</b> (pins up) so every jumper is reachable from above. <b>The Click sits on stilts</b> with its pins down and its screw terminals up.',
       '<b>Long runs:</b> if one 10 cm jumper is too short, the guide says so and adds a second one (male end into the first one’s female end). The joint is drawn on the wire.',
-      '<b>Dropped from the perfboard build:</b> perfboard, socket strips, bare rails, R1, R4, R5, C1, H1/H2 headers and the M3 spacers.',
-      '<b>Firmware changes:</b> the button uses the internal pull-up (<span class="mono">INPUT_PULLUP</span> on GPIO7). The GPIO1 battery divider is gone: read the cell voltage from the SIM868 with <span class="mono">AT+CBC</span>. All other pins are unchanged.'],
+      '<b>Dropped from the perfboard build:</b> perfboard, socket strips, bare rails, R1, R4, R5, C1, H1/H2 headers, the M3 spacers and the DC-DC boost.',
+      '<b>One power source:</b> a <b>power bank outside the case</b> (USB-A out, USB-C in for charging). A cut USB-A cable brings 5 V in through a grommet; the rocker is the main switch. An <b>STP28UD-3A step-down</b> makes <b>4.0 V for the SIM868</b>, which must never get 5 V.',
+      '<b>Firmware changes:</b> the button uses the internal pull-up (<span class="mono">INPUT_PULLUP</span> on GPIO7). There is no battery to measure: <span class="mono">AT+CBC</span> now reads the fixed 4.0 V; watch the power bank’s own LEDs. Do not play the voice line while the call is connecting (power bank ≈ 1 A total). All other pins are unchanged.'],
     tip: 'Hover any connection in the list to isolate it in 3D with both pin names.',
-    joints: [['PCM5102A', '6 header pins + 1 pin on the L pad (+ 4 config bridges if not pre-set)'], ['PAM8403', '6 pins'], ['Power', 'rocker 2 lugs, boost 4 pads, 2 PH2.0 splices'],
-      ['Boost output', 'C3 + 7 leads on the two OUT pads'], ['Geophone', '2 tabs (1 kΩ + lead)'], ['Speaker', '2 tabs'], ['Lid', '3 pixel pads, 2 diode splices, 2 button legs']] },
-  { phase: 'Prep', title: 'Pins on the DAC and the amp', view: 'pins', st: ['solder', 'cut'], focus: ['pcm', 'pam'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'The only module soldering. The ESP32-S3 and the Click already have their pins. The DAC and the amp get male header pins, <b>long side up</b>, so jumpers push straight on.',
-    holes: [['PCM5102A', '6-pin header (VIN GND LCK DIN BCK SCK): plastic on top, short ends through, solder underneath'], ['PCM L pad', 'one single pin in the L line-out pad next to the jack'],
-      ['PAM8403 in', '4 pins: L in, ⏚ in, +5V, GND (R in stays empty)'], ['PAM8403 out', '2 pins: L+ out, L− out (the R outputs stay empty)']],
-    notes: ['Snap single pins and short rows off the 40-pin strip (stock row 130).', 'PCM5102A back bridges: <b>1 FLT = L, 2 DEMP = L, 3 XSMT = H, 4 FMT = L</b> (many boards come pre-set: check before soldering).'] },
+    joints: [['PCM5102A', '6 header pins + the SCK bridge (+ 4 config bridges if not pre-set)'], ['Power', 'rocker 2 lugs, step-down 4 pads + 1000 µF, 2 PH2.0 splices'],
+      ['5 V splices', 'rocker lead + C3 + + step-down IN+ + 4 leads · USB black + C3 − + step-down IN− + 3 leads'], ['Geophone', '2 tabs (1 kΩ + lead)'], ['Speaker', '2 tabs (leads into the ZK-502M terminals)'], ['Lid', '3 pixel pads, 2 diode splices, 2 button legs']] },
+  { phase: 'Prep', title: 'Pins on the DAC', view: 'pins', st: ['solder', 'cut'], focus: ['pcm'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The only module soldering. The ESP32-S3 and the Click already have their pins. The DAC gets a male header, <b>long side up</b>, so jumpers push straight on. The ZK-502M needs no pins: it has screw terminals and a 3.5 mm jack.',
+    holes: [['PCM5102A', '6-pin header (VIN GND LCK DIN BCK SCK): plastic on top, short ends through, solder underneath'], ['PCM SCK', 'bridge the <b>SCK</b> solder pad on the front with a blob of solder: SCK must sit at ground or the DAC stays silent']],
+    notes: ['Snap a 6-pin row off the 40-pin strip (stock row 130).', 'PCM5102A back bridges: <b>1 FLT = L, 2 DEMP = L, 3 XSMT = H, 4 FMT = L</b> (many boards come pre-set: check before soldering).',
+      'No SCK pad on the front of your DAC? Then run a jumper from its SCK pin to any free GND instead.'] },
   { phase: 'Prep', title: 'Everything clicks into the base', view: 'base', st: ['hands'], all: true, focus: [], caseMode: 'solid', lid: 'hidden', calls: 'base', hideWires: true,
     lead: 'The base keeps its outside shape (Ø 176, same bayonet and feet). Only the inside changed: a tray, stilts and two pockets replace the perfboard posts.',
     notes: ['<b>ESP32-S3:</b> upside down onto the 4 tray posts, J1 row toward the front, USB-C to the right. The lips hold the board edges.', '<b>Click:</b> push onto the 3 stilts, terminals to the right. Do this <b>after</b> step 6 if your fingers are big: its jumpers go on from below.',
-      '<b>DAC + amp:</b> drop into their pockets, pins up.', '<b>SIM868, geophone, battery holder, boost, rocker:</b> same places and same snaps as the perfboard build.'],
-    warn: '<b>For Blender:</b> these inner features changed. The outer casing dimensions did not.' },
-  { phase: 'Power', title: 'Battery → switch → boost, SIM868 battery lead', view: 'power', st: ['solder', 'cut'], focus: ['batt', 'rocker', 'boost', 'sim'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'The heavy current wiring stays soldered: holder → rocker → boost input, and a battery lead from the boost input pads to the SIM868’s PH2.0 socket.',
-    notes: ['Battery <b>out of the holder</b> while soldering.', 'Each boost IN pad takes two wires (holder/rocker + SIM868 lead): twist, tin, solder.', 'Check the PH2.0 polarity against the plug of the Li-po that came in the Waveshare box (red = +).'],
-    warn: '<b>SIM868 power is VBAT only</b> (3.4–4.4 V), never 5 V. No charger in the device: charge the protected 18650 outside.' },
-  { phase: 'Power', title: 'Boost: 5.00 V, C3, output leads', view: 'boost', st: ['meter', 'solder', 'plug'], focus: ['boost', 'esp', 'pcm', 'pam'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'Set the boost to 5.00 V first (meter on the output, nothing else connected). Then solder C3 and seven jumper leads onto the OUT pads and plug their female ends on.',
-    notes: ['<b>OUT+ (4 leads):</b> ESP32-S3 5V, DAC VIN, amp +5V, lid 5V. <b>OUT− (3 leads):</b> ESP32-S3 GND, amp GND, lid GND.', 'Twist the stripped ends of one pad’s leads together with the C3 leg, tin, then solder onto the pad. Lift the boost out of its pocket to do this.',
-      'C3 470 µF: stripe (−) to OUT−.', 'The two lid leads end mid-air near the battery; their partners come with the lid in step 10.'],
-    warn: 'Boost trimmers often start near maximum. Measure before any lead goes onto a pin.' },
+      '<b>DAC:</b> drops into its pocket, pins up. <b>ZK-502M:</b> comes last (step 10).', '<b>Step-down:</b> lies flat in its pocket where the 18650 holder used to be.', '<b>SIM868, geophone, rocker:</b> same places and same snaps as the perfboard build. The old boost pocket now holds the two power splices and C3.'],
+    warn: '<b>For Blender:</b> these inner features changed, plus one new hole: a <b>Ø 6 mm grommet hole in the left wall</b> (about 6 mm above the floor, 28° in front of the left side) for the power bank cable. The outer dimensions did not change.' },
+  { phase: 'Power', title: 'Power bank → rocker · step-down → SIM868', view: 'power', st: ['cut', 'meter', 'solder'], focus: ['pbank', 'rocker', 'buck', 'sim'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'The power bank stays <b>outside</b> the case. Its cut USB-A cable comes in through the grommet; the red core goes to the rocker (main switch). The step-down is set to <b>4.0 V</b> and wired to the SIM868’s battery socket.',
+    notes: ['Strip ~60 mm of the cable jacket inside the case. <b>Red = 5 V, black = GND</b>; cut white and green short and tape them. Check with the meter first: power bank on, red to black ≈ 5.0 V. Cable tie on the jacket just inside the grommet.',
+      '<b>Set the step-down before wiring its output:</b> clip its IN+ to rocker pin 2 and IN− to the USB black core, rocker on, meter on OUT, turn the trimmer to <b>4.00 V</b> (±0.05 V). Unclip.',
+      'Solder the 1000 µF across OUT+ / OUT− right at the module (stripe to OUT−), then the PH2.0 plug leads extended with 0.5 mm² (red to OUT+, black to OUT−). Check polarity against the Li-po plug in the Waveshare box (red = +).',
+      '<b>Auto-off test:</b> many power banks switch off below ~50–100 mA. Run the ESP32 alone from it for 2–3 minutes; if it turns off, look for an always-on / low-current mode (often a double press of its button).'],
+    warn: '<b>SIM868 power is the 4.0 V step-down only</b> (allowed 3.4–4.4 V), never 5 V. These trimmers can start near the maximum: measure before the PH2.0 plug goes in.' },
+  { phase: 'Power', title: '5 V and GND splices, 5 V leads', view: 'boost', st: ['cut', 'solder', 'plug'], focus: ['splice', 'buck', 'esp', 'pcm'], caseMode: 'ghost', lid: 'hidden',
+    lead: 'Everything that shares 5 V or GND meets in two star splices, soldered in one go. Then plug the female ends on.',
+    notes: ['<b>5 V splice:</b> lead from rocker pin 2 + C3 + leg + step-down IN+ lead + 3 jumper leads (ESP32-S3 5V, DAC VIN, lid 5V) + a <b>red 0.5 mm² amp lead</b>.',
+      '<b>GND splice:</b> USB black core + C3 − leg + step-down IN− lead + 2 jumper leads (ESP32-S3 GND, lid GND) + a <b>black 0.5 mm² amp lead</b>.',
+      'The two amp leads are only screwed in at the very end (step 10): cut them about 150 mm long, tape the bare ends and fold them aside.',
+      'Splice: twist the stripped ends together, solder, slide 6 mm heat-shrink over it. Both splices lie in the old boost pocket with C3 standing beside them.',
+      'The two lid leads end mid-air above the step-down; their partners come with the lid in step 9.'],
+    warn: 'A 5 W power bank gives about <b>1 A in total</b>. The SIM868 pulls 2 A bursts while transmitting: C3 and the 1000 µF cover them, but test a real call with everything running.' },
   { phase: 'Jumpers', title: 'ESP32-S3 ↔ Click (SPI, 3V3, GND)', view: 'spi', st: ['plug'], focus: ['esp', 'click'], caseMode: 'ghost', lid: 'hidden',
     lead: 'Nine F-F jumpers. Each one leaves its ESP32-S3 pin upward, drops down in front of the ESP32-S3 and runs under the Click to its pin.',
     notes: ['Easiest order: plug the Click ends first with the Click in your hand, then press the Click onto its stilts, then plug the ESP32-S3 ends.', 'Pin map is unchanged: SCK 12, MISO 13, MOSI 14, ADC CS 11, clock-chip CS 9, DRDY 10, RST 8.'] },
   { phase: 'Jumpers', title: 'Geophone → Click CH1', view: 'geo', st: ['solder', 'screw', 'cut'], focus: ['geo', 'click'], caseMode: 'ghost', lid: 'hidden',
     lead: 'Solder the 1 kΩ across the SM-24 tabs and a twisted pair to CH1. Two short loops chain CH1−, CH2− and CH2+, and one lead from the Click’s front GND pin grounds the chain.',
     notes: ['Each screw terminal takes at most two conductors: <b>CH1−</b> = geophone − + loop · <b>CH2−</b> = two loops · <b>CH2+</b> = loop + GND lead · <b>CH1+</b> = geophone +.', 'Gain 32 in firmware (±37.5 mV).'] },
-  { phase: 'Jumpers', title: 'Audio: I²S, DAC → amp', view: 'audio', st: ['plug'], focus: ['pcm', 'pam', 'esp'], caseMode: 'ghost', lid: 'hidden',
-    lead: 'Three I²S jumpers, the DAC ground, SCK to ground (through the amp’s input-ground pin) and the line audio from the DAC’s L pin to the amp’s L input.',
-    notes: ['Only the left channel is used. Start with low volume in firmware.'] },
   { phase: 'Jumpers', title: 'SIM868: UART, PWRKEY, 3V3, GND', view: 'sim', st: ['plug', 'hands'], focus: ['sim', 'esp'], caseMode: 'ghost', lid: 'hidden',
     lead: 'Five M-F jumpers: the female end goes onto the ESP32-S3 pin, the male end straight into the SIM868’s Pico socket (Pico removed).',
     holes: [['pin 1', 'GP0 → SIM868 RXD (through the board’s level shifter)'], ['pin 2', 'GP1 ← SIM868 TXD'], ['pin 18', 'GND'], ['pin 19', 'GP14 / PWR_EN: HIGH 1.5 s switches the SIM868 on or off'], ['pin 36', '3V3(OUT): feeds the level shifter']],
     notes: ['Pico pin numbers: pin 1 = GP0, at the end where the Pico’s USB sat. Pins 1–20 run along the antenna edge: keep that edge <b>up</b>.', 'Power switch on the SIM868 board: <b>battery</b> side. Nano SIM (PIN off) in before the board goes into its cradle.',
       'Firmware: UART1 TX 17 / RX 18 at 115200; at boot drive GPIO16 HIGH for 1.5 s, then LOW, then wait for <span class="mono">RDY</span>.'],
     warn: 'Never let the SIM868 power up without the GSM antenna on its u.FL socket.' },
-  { phase: 'Lid', title: 'Lid: pixel, button, speaker', view: 'lid', st: ['solder', 'cut', 'plug'], focus: ['lidparts', 'spk', 'esp', 'pam'], caseMode: 'ghost', lid: 'glass',
+  { phase: 'Lid', title: 'Lid: pixel, button', view: 'lid', st: ['solder', 'cut', 'plug'], focus: ['lidparts', 'spk', 'esp'], caseMode: 'ghost', lid: 'glass',
     lead: 'Solder short leads onto the lid parts, then plug them in. Lengths include 25 mm slack so the lid can be lifted and twisted.',
     notes: ['<b>Pixel:</b> cut one WS2812B at the copper pads, DIN arrow pointing away from the pads you solder. Solder 3 leads: DIN (female end), GND (male end) and +5V through the <b>1N4001</b> (stripe toward the pixel, male end).',
-      '<b>Button:</b> lead on leg 1 (female end → GPIO7) and a short wire from the diagonal leg 4 to the pixel GND pad.', '<b>Junctions:</b> the lid’s male 5V and GND ends push into the female boost leads from step 5. Wrap each joint with tape.',
-      '<b>Speaker:</b> two leads soldered to the tabs, female ends onto the amp’s L+ and L− pins.'],
-    warn: 'The amp outputs are bridged: <b>L− is not ground.</b>' },
-  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'boost', 'sim'], caseMode: 'ghost', lid: 'ghost',
+      '<b>Button:</b> lead on leg 1 (female end → GPIO7) and a short wire from the diagonal leg 4 to the pixel GND pad.', '<b>Junctions:</b> the lid’s male 5V and GND ends push into the female splice leads from step 5. Wrap each joint with tape.',
+      '<b>Speaker:</b> clip it into the lid now; its leads go to the amp in the next step.'] },
+  { phase: 'Audio', title: 'Audio last: DAC → ZK-502M → speaker', view: 'audio', st: ['plug', 'screw', 'cut'], focus: ['pcm', 'zk', 'esp', 'spk'], caseMode: 'ghost', lid: 'glass',
+    lead: 'The last wiring step: three I²S jumpers and the DAC ground, a 3.5 mm AUX cable from the DAC into the ZK-502M, the two amp leads from the splices into its <b>DC jack</b>, and the speaker into its <b>L</b> screw-terminal pair.',
+    notes: ['<b>ZK-502M:</b> stick it down on foam pads in the free front-right area (drawn as a placeholder: measure yours). Screw terminals: strip 5 mm, tighten, tug-test.',
+      '<b>Power → DC jack</b> (the round “power in” socket). Either solder the amp leads to a <b>5.5 × 2.1 mm DC plug</b> (red → centre pin, black → sleeve), or solder them to the jack’s legs underneath: the leg that beeps to the centre pin is <b>+</b> (red), the leg that beeps to the USB-A shell is <b>−</b> (black), a third leg stays empty. Measure +5.0 V at the centre pin before the amp powers up. 5 V is enough (it runs on 5–24 V) and keeps the output near the 1 W speaker’s rating.',
+      '<b>Input:</b> AUX cable from the DAC’s line-out jack into the ZK-502M’s AUX jack. If it has a mode button, set it to AUX once; many switch over by themselves when the cable is plugged in.',
+      '<b>Speaker → the two terminals marked L.</b> One speaker lead in each; with a single speaker it does not matter which goes where. The <b>R</b> pair stays empty. Lengths include 25 mm slack for lifting the lid.',
+      '<b>Firmware:</b> the voice must be on the left I²S channel (sending it on both is fine too). Volume knob <b>low</b> first, low volume in firmware too.',
+      'The <b>USB-A</b> port on the amp is for a music stick: leave it empty.'],
+    warn: 'The amp outputs are bridged: <b>no screw terminal is ground.</b> Never join a speaker lead to GND, and never feed 5 V into the screw terminals.' },
+  { phase: 'Test', title: 'Check before closing', view: 'check', st: ['meter', 'laptop'], all: true, focus: ['esp', 'pbank', 'splice', 'sim'], caseMode: 'ghost', lid: 'ghost',
     lead: 'Test on the bench before anything is closed.',
-    notes: ['<b>No battery:</b> beep boost OUT+ to OUT− and IN+ to IN−: neither may beep.', '<b>Check each jumper</b> end to end against the list (hover a line to see it).',
-      '<b>Battery in, rocker on:</b> 5.0 V at J1-21, 3.3 V at J1-1 and on the Click 3V3 pin, 3.7–4.2 V at the SIM868 PH2.0 plug.', '<b>Flash:</b> rocker off, USB-C into the ESP32-S3 (lid off).',
-      'Then: LED colours, button, voice line, PWRKEY → SIM868 <b>NET</b> LED blinks slowly (registered) → <span class="mono">AT</span> → <span class="mono">AT+CBC</span> (battery mV) → <span class="mono">AT+CREG?</span> (0,1) → call.'] },
+    notes: ['<b>Power bank unplugged:</b> beep the 5 V splice to the GND splice, and the 5 V splice to the SIM868 PH2.0 red lead: neither may beep.', '<b>Check each jumper</b> end to end against the list (hover a line to see it).',
+      '<b>Power bank on, rocker on:</b> 5.0 V at J1-21, 3.3 V at J1-1 and on the Click 3V3 pin, <b>4.0 V</b> at the SIM868 PH2.0 plug.', '<b>Flash:</b> rocker off, then USB-C into the ESP32-S3 (lid off).',
+      'Then: LED colours, button, voice line (ZK-502M knob low), PWRKEY → SIM868 <b>NET</b> LED blinks slowly (registered) → <span class="mono">AT</span> → <span class="mono">AT+CBC</span> (≈ 4000 mV) → <span class="mono">AT+CREG?</span> (0,1) → call, with the ESP32 and audio running.'] },
   { phase: 'Case', title: 'Close the lid (twist-lock)', view: 'lidon', st: ['hands'], all: true, focus: ['lidparts', 'spk'], caseMode: 'solid', lid: 'glass', calls: 'lid',
     lead: 'Fold the jumper slack flat over the ESP32-S3, line up the marks, push down, twist.',
     notes: ['Bundle the long runs with one or two cable ties so nothing sits between the lid and the Click terminals.', 'Line up the teal marks, press down, turn 25° clockwise until the detent clicks. Open: turn back and lift.'] },
@@ -595,8 +627,8 @@ const steps = [
     notes: ['<b>Lid ↔ base:</b> 3-lug bayonet, 25° turn, detent bump; 0.4 mm clearance.', '<b>Button:</b> printed flexure tab presses the tact switch in its lid pocket.', '<b>LED:</b> 0.6 mm skin over the pixel glows through.', '<b>Print:</b> PETG, 0.2 mm layers, 2.5 mm walls, flat side down, no supports.'] }
 ];
 const CALLS = {
-  base: [['ESP32-S3 tray (pins up)', v(EX - 29.5, 16, EZ - 11)], ['Click stilts ×3', v(CX + 19.5, 30, CZ - 9)], ['DAC pocket', v(PX, 10, PZ + 16)], ['Amp pocket', v(AX, 10, AZ + 12)],
-    ['Geophone twist-lock cup', v(55, 40, -48)], ['Battery snap tabs', v(17, 24, 23.9)], ['Boost pocket', v(-10.7, 7, 58.5)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)]],
+  base: [['ESP32-S3 tray (pins up)', v(EX - 29.5, 16, EZ - 11)], ['Click stilts ×3', v(CX + 19.5, 30, CZ - 9)], ['DAC pocket', v(PX, 10, PZ + 16)], ['ZK-502M on foam pads (no pocket yet)', v(ZX, 20, ZZ + 16)],
+    ['Geophone twist-lock cup', v(55, 40, -48)], ['Step-down pocket', v(19.8, 10, 23)], ['Splice pocket', v(-10.7, 7, 58.5)], ['USB cable grommet', v(-76, 12, 42)], ['SIM868 cradle', v(-2, 38, -72)], ['Rocker snaps in', v(89, 27, 6.5)]],
   lid: [['Lugs ride in L-slots', v(44, 34, 76)], ['Turn 25° → click', v(-76, 34, 44)]],
   closed: [['Twist-lock lid (25°)', v(76, 33, 44)], ['LED window', v(LED_X, 40, LED_Z)], ['Flexure button', v(BTN_X, 40, BTN_Z)], ['Speaker grille', v(-5, 40, 35)], ['Power rocker', v(91, 25, 6.5)], ['Feet ×3', v(0, -4, 62)]]
 };
@@ -661,7 +693,7 @@ function apply() {
 /* ======================= panel ======================= */
 const card = document.getElementById('card');
 const endHTML = (pin, sol) => `<span class="h${sol ? ' sol' : ''}">${pin.tag}</span><span class="what">${pin.what}</span>`;
-const SOLDERED = { pig: [true, false], pigm: [true, false], pair: [true, false], fterm: [false, false], w05: [true, true], lead: [true, true], ph: [true, true], lidlocal: [true, true] };
+const SOLDERED = { pig: [true, false], pigm: [true, false], pair: [true, false], fterm: [false, false], w05: [true, true], usb: [false, true], pterm: [true, false], sterm: [true, false], lead: [true, true], ph: [true, true], lidlocal: [true, true] };
 function opHTML(w, num) {
   const sol = SOLDERED[w.kind] || [false, false];
   const jumper = ['ff', 'mf', 'pig', 'pigm', 'fterm'].includes(w.kind);
@@ -670,8 +702,8 @@ function opHTML(w, num) {
     ${jumper ? `<span class="trim${w.chain ? '' : ' ok'}">${w.cut}</span>` : `<div class="meta">${w.cut}</div>`}</div></div>`;
 }
 const GROUPS = [['ff', 'F-F jumpers'], ['mf', 'M-F jumpers (male end into the SIM868)'], ['pig', 'Soldered leads with a female end'], ['pigm', 'Soldered leads with a male end (junction)'],
-  ['fterm', 'Jumper into a screw terminal'], ['pair', 'Twisted pair'], ['loop', 'Terminal loops'], ['power', 'Power wires (soldered)'], ['lidlocal', 'Lid wire (soldered)']];
-const kindGroup = k => (k === 'w05' || k === 'lead' || k === 'ph') ? 'power' : k;
+  ['fterm', 'Jumper into a screw terminal'], ['aux', 'AUX cable'], ['sterm', 'Speaker leads (screw terminals)'], ['pair', 'Twisted pair'], ['loop', 'Terminal loops'], ['power', 'Power wires (soldered)'], ['lidlocal', 'Lid wire (soldered)']];
+const kindGroup = k => (k === 'w05' || k === 'lead' || k === 'ph' || k === 'usb' || k === 'pterm') ? 'power' : k;
 function render() {
   const s = steps[cur];
   document.getElementById('count').textContent = `step ${cur + 1} / ${steps.length}`;
@@ -698,8 +730,8 @@ function render() {
     h += `<div class="sec">What to take from the stock</div><table class="tot">
       <tr><td>F-F jumpers 10 cm (stock row 42)</td><td class="q">${ff}</td></tr><tr><td>M-F jumpers 10 cm (stock row 39)</td><td class="q">${mf}</td></tr>
       <tr><td>6×0.22 cable, two cores (stock row 359)</td><td class="q">${pairL} mm</td></tr><tr><td>0.5 mm² red (stock row 353)</td><td class="q">${red} mm</td></tr>
-      <tr><td>0.5 mm² black (stock row 352)</td><td class="q">${blk} mm</td></tr><tr><td>Male pin header strip (stock row 130)</td><td class="q">13 pins</td></tr>
-      <tr><td>PH2.0 2-pin plug with leads (buy)</td><td class="q">1</td></tr><tr><td>470 µF electrolytic (C3) · 1 kΩ · 1N4001</td><td class="q">1 each</td></tr></table>`;
+      <tr><td>0.5 mm² black (stock row 352)</td><td class="q">${blk} mm</td></tr><tr><td>Male pin header strip (stock row 130)</td><td class="q">6 pins</td></tr>
+      <tr><td>PH2.0 2-pin plug with leads (buy)</td><td class="q">1</td></tr><tr><td>470 µF (C3) · 1000 µF (step-down output) · 1 kΩ · 1N4001</td><td class="q">1 each</td></tr><tr><td>Power bank · USB-A cable (any, far end cut off) · STP28UD-3A step-down (stock row 291)</td><td class="q">1 each</td></tr><tr><td>ZK-502M amp · 3.5 mm male–male AUX cable</td><td class="q">1 each</td></tr></table>`;
     h += `<div class="sec">Every wire</div>`;
     steps.forEach((st, i) => { const list = stepWires(i); if (!list.length) return;
       list.forEach((w, j) => { h += `<div class="op" data-w="${w.id}"><span class="n">${i + 1}.${j + 1}</span><div><div class="end"><span class="sw" style="background:${w.color}"></span><b>${PIN[w.a].tag}</b> <span class="what">${plain(PIN[w.a].what)}</span> → <b>${PIN[w.b].tag}</b> <span class="what">${plain(PIN[w.b].what)}</span></div><div class="meta">${w.cut}</div></div></div>`; }); });
