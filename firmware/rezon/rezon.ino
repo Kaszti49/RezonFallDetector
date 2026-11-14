@@ -19,11 +19,16 @@
     !profile stage|home                                          !stream 0|1  raw D lines off / on
     !test              run the alarm sequence now (it DIALS)     !reset       back to watching, hang up
     !modem             SIM, signal, registration                 !at <cmd>    raw AT command to the modem
+    !pwr               pulse the modem's PWRKEY now (switches it on, or OFF if it was on)
+    !pwrhold [s]       hold GPIO16 (PWRKEY) high for s seconds (default 15) to measure it; reports the pin's own level
     !cal               floor calibration (phase 4, not written yet)
 */
 #include <SPI.h>
 #include <Preferences.h>
 #include <ESP_I2S.h>
+#include <esp_system.h>
+#include <esp_task_wdt.h>
+#include <driver/gpio.h>
 #include "src/core/rezon_core.h"
 #include "src/core/rezon_proto.h"
 #include "src/core/rezon_alarm.h"
@@ -118,7 +123,9 @@ static void IRAM_ATTR onDrdy() { BaseType_t w = pdFALSE; xSemaphoreGiveFromISR(d
 
 static void samplingTask(void *) {
   uint8_t rx[12]; Note o;
+  esp_task_wdt_add(nullptr);              // if this task ever hangs (e.g. inside the detector), the board restarts and says "WATCHDOG"
   for (;;) {
+    esp_task_wdt_reset();
     if (xSemaphoreTake(drdySem, pdMS_TO_TICKS(20)) != pdTRUE && digitalRead(PIN_DRDY) != LOW) continue;
     if (!adcRunning) continue;
     frame(0, 0, rx);
@@ -179,7 +186,7 @@ static void audioTask(void *) {
 }
 
 // ---------------------------------------------------------------- modem (SIM868), from practice/sim868_call_test
-enum ModemCmd : uint8_t { MC_DIAL = 1, MC_HANGUP, MC_STATUS, MC_RAW };
+enum ModemCmd : uint8_t { MC_DIAL = 1, MC_HANGUP, MC_STATUS, MC_RAW, MC_PWR };
 enum ModemRes : uint8_t { MR_DIAL_OK = 1, MR_DIAL_FAIL, MR_CALL_ENDED };
 static volatile bool modemReady = false; static char rawAt[64];
 static void mlog(const char *s) { Serial.printf("M,%s\n", s); }
@@ -203,19 +210,42 @@ static void modemStatus() {
   s = atCmd("AT+CBC"); s.trim(); s.replace("\r\n", " "); mlog(s.c_str());                // supply: about 4000 mV from the step-down
 }
 static bool registered() { String r = atCmd("AT+CREG?"); return r.indexOf(",1") >= 0 || r.indexOf(",5") >= 0; }
+// Switch the modem on if it does not answer. A PWRKEY pulse TOGGLES its power, so it is only sent when AT gets no answer.
+static bool modemPowerUp() {
+  if (modemAlive()) return true;
+  mlog("no answer, switching the modem on (PWRKEY 1.5 s)");
+  digitalWrite(PIN_PWRKEY, HIGH); vTaskDelay(pdMS_TO_TICKS(1500)); digitalWrite(PIN_PWRKEY, LOW);
+  vTaskDelay(pdMS_TO_TICKS(4000));
+  uint32_t t0 = millis();
+  while (millis() - t0 < 15000) if (modemAlive()) return true;
+  mlog("STILL NO ANSWER: check 4.0 V at the PH2.0 plug (power bank + rocker on), board switch, TX 17 -> pin 1, RX 18 <- pin 2, GND, pin 36 = 3V3");
+  return false;
+}
+// The SIM still has its PIN on. With REZON_SIM_PIN in secrets.h it is entered ONCE per boot: three wrong tries would lock the SIM (PUK).
+static bool pinTried = false;
+static void unlockSim() {
+  String s = atCmd("AT+CPIN?", 3000);
+  if (s.indexOf("READY") >= 0) { mlog("SIM ready"); return; }
+  if (s.indexOf("SIM PIN") >= 0) {
+#ifdef REZON_SIM_PIN
+    if (pinTried) { mlog("SIM still asks for its PIN: not trying again (check REZON_SIM_PIN, then restart)"); return; }
+    pinTried = true;
+    const String c = String("AT+CPIN=\"") + REZON_SIM_PIN + "\"";
+    mlog(atOk(c.c_str(), 5000) ? "SIM unlocked with the PIN from secrets.h" : "SIM PIN REJECTED: check REZON_SIM_PIN before the next restart (3 wrong = locked)");
+#else
+    mlog("SIM asks for its PIN: switch the PIN off in a phone, or put REZON_SIM_PIN in secrets.h");
+#endif
+    return;
+  }
+  s.trim(); s.replace("\r\n", " "); mlog((String("SIM: ") + s).c_str());              // e.g. no SIM inserted
+}
+static void modemSetup() { atOk("ATE0"); atOk("AT+CMEE=2"); atOk("AT+CLVL=90"); unlockSim(); }
 static void modemTask(void *) {
   Serial1.begin(SIM_BAUD, SERIAL_8N1, PIN_SIM_RX, PIN_SIM_TX);
   vTaskDelay(pdMS_TO_TICKS(500));
-  if (!modemAlive()) {
-    mlog("no answer, switching the modem on (PWRKEY 1.5 s)");
-    digitalWrite(PIN_PWRKEY, HIGH); vTaskDelay(pdMS_TO_TICKS(1500)); digitalWrite(PIN_PWRKEY, LOW);
-    vTaskDelay(pdMS_TO_TICKS(4000));
-    uint32_t t0 = millis(); bool ok = false;
-    while (!ok && millis() - t0 < 15000) ok = modemAlive();
-    if (!ok) mlog("STILL NO ANSWER: check TX 17 -> pin 1, RX 18 <- pin 2, GND, pin 36 = 3V3, 4.0 V supply, board switch");
-  }
-  atOk("ATE0"); atOk("AT+CMEE=2"); atOk("AT+CLVL=90");
-  uint32_t lastCheck = 0; bool inCall = false; String urc;
+  bool alive = modemPowerUp();
+  if (alive) modemSetup();
+  uint32_t lastCheck = millis(), lastPower = millis(); bool inCall = false; String urc;
   for (;;) {
     uint8_t cmd;
     if (xQueueReceive(modemQ, &cmd, pdMS_TO_TICKS(100)) == pdTRUE) {
@@ -226,6 +256,15 @@ static void modemTask(void *) {
         xQueueSend(modemResQ, &res, 0);
       } else if (cmd == MC_HANGUP) { atOk("ATH", 3000); inCall = false; mlog("hung up"); }
       else if (cmd == MC_STATUS) modemStatus();
+      else if (cmd == MC_PWR) {                                                              // on request: pulse PWRKEY now (toggles: on -> off too)
+        mlog(modemAlive() ? "modem answers already: the pulse will switch it OFF" : "modem silent: pulsing PWRKEY to switch it on");
+        digitalWrite(PIN_PWRKEY, HIGH); vTaskDelay(pdMS_TO_TICKS(1500)); digitalWrite(PIN_PWRKEY, LOW);
+        mlog("PWRKEY pulse done (GPIO16 high 1.5 s), waiting up to 15 s for AT");
+        vTaskDelay(pdMS_TO_TICKS(3000)); uint32_t t0 = millis(); bool ok = false;
+        while (!ok && millis() - t0 < 12000) ok = modemAlive();
+        alive = ok; mlog(ok ? "modem answers AT" : "no answer after the pulse: modem has no power (board switch?) or the pulse does not reach PWR (GPIO16 jumper)");
+        if (ok) modemSetup();
+      }
       else if (cmd == MC_RAW) { String s = atCmd(rawAt, 3000); s.trim(); s.replace("\r\n", " "); mlog(s.c_str()); }
     }
     while (Serial1.available()) urc += (char)Serial1.read();                               // unasked lines: NO CARRIER, BUSY, NO ANSWER, RING
@@ -233,9 +272,18 @@ static void modemTask(void *) {
       inCall = false; mlog("call ended"); uint8_t res = MR_CALL_ENDED; xQueueSend(modemResQ, &res, 0);
     }
     if (urc.length() > 200) urc = urc.substring(urc.length() - 40);
-    if (!inCall && millis() - lastCheck > 10000) {                                         // keep it ready: registration check every 10 s
-      lastCheck = millis(); const bool r = registered();
-      if (r != modemReady) { modemReady = r; mlog(r ? "registered, ready to call" : "NOT registered: check SIM (PIN off), antenna, signal"); }
+    if (!inCall && millis() - lastCheck > 10000) {                                         // keep it ready: check every 10 s
+      lastCheck = millis();
+      if (!modemAlive()) {
+        if (alive) { alive = false; mlog("modem stopped answering (power?)"); }
+        if (modemReady) { modemReady = false; mlog("NOT ready to call"); }
+        // got power later (rocker switched on after boot)? Try to switch it on, at most once a minute
+        if (millis() - lastPower > 60000) { lastPower = millis(); if ((alive = modemPowerUp())) modemSetup(); }
+        lastCheck = millis(); continue;
+      }
+      if (!alive) { alive = true; modemSetup(); }
+      const bool r = registered();
+      if (r != modemReady) { modemReady = r; mlog(r ? "registered, ready to call" : "NOT registered: check SIM (PIN), GSM antenna, signal"); if (!r) unlockSim(); }
     }
   }
 }
@@ -297,6 +345,17 @@ static void pollButton(uint32_t now) {
 }
 
 // ---------------------------------------------------------------- commands
+// PWRKEY check: hold GPIO16 high for a while so it can be measured, and read the pad back (input stays enabled on this pin).
+static uint32_t pwrHoldUntil = 0, pwrHoldNext = 0;
+static void pwrHold(uint32_t now, int sec) {
+  digitalWrite(PIN_PWRKEY, HIGH); pwrHoldUntil = now + sec * 1000UL; pwrHoldNext = now + 300;
+  Serial.printf("# GPIO16 (PWRKEY) held HIGH for %d s: measure the ESP32 pin 16 and the SIM board PWR pin against GND now\n", sec);
+}
+static void pwrHoldTick(uint32_t now) {
+  if (!pwrHoldUntil) return;
+  if ((int32_t)(now - pwrHoldUntil) >= 0) { digitalWrite(PIN_PWRKEY, LOW); pwrHoldUntil = 0; Serial.println("# GPIO16 back LOW"); return; }
+  if ((int32_t)(now - pwrHoldNext) >= 0) { pwrHoldNext = now + 2000; Serial.printf("# GPIO16 set HIGH, the pin itself reads %s\n", gpio_get_level((gpio_num_t)PIN_PWRKEY) ? "HIGH (ok)" : "LOW: something pulls it down (short to GND, or a load without resistor)"); }
+}
 static void handleLine(char *s, uint32_t now) {      // now = loop()'s clock: a fresh millis() here can be 1 ms ahead and make tick() skip a state
   if (s[0] == 'G' && s[1] >= '0' && s[1] <= '7' && !s[2]) { if (adcRunning) setGain(s[1] - '0'); return; }
   if (!strcmp(s, "R")) { startAdc(); return; }
@@ -310,6 +369,8 @@ static void handleLine(char *s, uint32_t now) {      // now = loop()'s clock: a 
   else if (!strcmp(s, "!test")) alarmSeq.test(now);
   else if (!strcmp(s, "!reset")) alarmSeq.reset(now);
   else if (!strcmp(s, "!modem")) { uint8_t c = MC_STATUS; xQueueSend(modemQ, &c, 0); }
+  else if (!strcmp(s, "!pwr")) { uint8_t c = MC_PWR; xQueueSend(modemQ, &c, 0); }
+  else if (!strcmp(s, "!pwrhold")) pwrHold(now, arg ? atoi(arg) : 15);
   else if (!strcmp(s, "!at") && arg) { strlcpy(rawAt, arg, sizeof rawAt); uint8_t c = MC_RAW; xQueueSend(modemQ, &c, 0); }
   else if (!strcmp(s, "!cal")) Serial.println("# calibration is phase 4: not written yet. Set stepMin / impactMin / stepRef by hand for now.");
   else Serial.printf("# unknown command %s\n", s);
@@ -328,6 +389,7 @@ void setup() {
   Serial.setTxBufferSize(16384);
   Serial.begin(BAUD);
   pinMode(PIN_CS, OUTPUT); pinMode(PIN_CS2, OUTPUT); pinMode(PIN_RST, OUTPUT); pinMode(PIN_PWRKEY, OUTPUT);
+  gpio_set_direction((gpio_num_t)PIN_PWRKEY, GPIO_MODE_INPUT_OUTPUT); gpio_set_drive_capability((gpio_num_t)PIN_PWRKEY, GPIO_DRIVE_CAP_3);   // read-back + full drive
   digitalWrite(PIN_CS, HIGH); digitalWrite(PIN_CS2, HIGH); digitalWrite(PIN_RST, HIGH); digitalWrite(PIN_PWRKEY, LOW);
   pinMode(PIN_DRDY, INPUT_PULLUP); pinMode(PIN_BTN, INPUT_PULLUP);
   led(10, 10, 10);
@@ -336,6 +398,13 @@ void setup() {
   loadSettings();
   delay(300);
   Serial.println("\n# REZON fall detector");
+  {
+    const esp_reset_reason_t r = esp_reset_reason();
+    const char *why = r == ESP_RST_POWERON ? "power-on" : r == ESP_RST_BROWNOUT ? "BROWNOUT: the supply dipped (power, loose wire, amp)"
+                    : r == ESP_RST_PANIC ? "CRASH (panic)" : (r == ESP_RST_TASK_WDT || r == ESP_RST_INT_WDT || r == ESP_RST_WDT) ? "WATCHDOG: a task hung"
+                    : r == ESP_RST_SW ? "software restart" : r == ESP_RST_EXT ? "reset pin" : r == ESP_RST_USB ? "USB (port opened / upload)" : "other";
+    Serial.printf("# restart reason: %s (%d)\n", why, (int)r);
+  }
   Serial.printf("# profile %s, phone number %s\n", alarmSeq.prof.name, strlen(REZON_PHONE) ? "set" : "NOT SET (no secrets.h)");
   SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI);
   startAdc();
@@ -394,6 +463,7 @@ void loop() {
   }
   if (alarmSeq.takeChange()) Serial.printf("A,%s,%lu\n", ASTATE_NAME[alarmSeq.state()], (unsigned long)alarmSeq.stateLen());
   showLed(now);
+  pwrHoldTick(now);
 
   if (now - lastStat >= 1000) {
     const uint32_t sc = sampleCount, e = crcErrors; crcErrors = 0;

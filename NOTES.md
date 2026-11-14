@@ -338,3 +338,18 @@ Rule 0 (old absolute rule) is still there: `!set rule 0`.
 
 **Flashed 2026-11-14.** The board now enumerates as **COM15** (CH343); COM4 is a Bluetooth port on this laptop, so uploads to COM4 time out. Device reports rule 1 and the new settings. Settings kept in flash: stepMin 1.5, impactMin 18, walkerMargin 1.5, stepRef 8, gain ×2. Replay with exactly these: 3/3 falls, 3/3 jumps rejected. The far fall's peak (19.1) is only just above impactMin 18. Suggested: impactMin 6.
 - impactMin set to 6 and stored in flash (2026-11-14), confirmed with !get.
+
+## Calling after a confirmed fall (2026-11-14)
+
+- `secrets.h` created locally (git-ignored) with the number and the SIM PIN. Neither goes into git or these notes.
+- Modem task: switches the modem on at boot and, if it gets power later (rocker switched on after boot), retries once a minute. Enters `REZON_SIM_PIN` once per boot only (3 wrong tries = PUK). Logs SIM / registration state.
+- Diagnostics: boot line "restart reason: …" (power-on, BROWNOUT, WATCHDOG, CRASH, …); the sampling task is on the task watchdog (a hang restarts the board instead of freezing).
+- train.html: keeps reading through serial glitches, skips a bad line instead of stopping, shows "NO DATA" / "device lost".
+- The "freeze" on a strong fall was a loose contact (the board lost power), fixed temporarily by Kaszti.
+- **Power conflict:** the modem only gets 4.0 V with power bank + rocker ON, and the guide says rocker OFF while USB is in. Call test = power bank only, no laptop. Running both on stage needs a hardware decision (e.g. USB cable without VBUS); check the board before trying.
+- Compiled, not flashed yet (Kaszti: "not yet").
+
+**First call from Rezon (2026-11-14):** the modem never switched on because the SIM868 board's switch was on "USB" instead of "VBAT". With the 600 mAh Li-po in the board's battery socket (rocker off, ESP32 on laptop USB): PIN accepted from secrets.h, registered, CSQ 20, battery 3.99 V. `!test` ran ASK → WAIT → ANNOUNCE → dialling → INCALL; the phone rang, the call ended after ~28 s (hung up on the phone side), DONE → WATCH.
+- New commands: `!pwr` (PWRKEY pulse now: it TOGGLES, so it switches a running modem off) and `!pwrhold [s]` (hold GPIO16 high to measure it; the pin reads itself back).
+- Opening the serial port restarts the ESP32 but not the modem; the boot check sees it answering and sends no pulse.
+- Li-po on the SIM board = modem independent of the rocker, so laptop + live page + calls work together (no 5 V conflict). The Li-po is not charged in this setup (the board charges only from the Pico's VBUS): check `!modem` → +CBC.

@@ -212,23 +212,43 @@ $('profile').onchange = e => send('!profile ' + e.target.value);
 $('bGet').onclick = () => send('!get'); $('bSave').onclick = () => send('!save'); $('bCal').onclick = () => send('!cal'); $('bTest').onclick = () => send('!test'); $('bReset').onclick = () => send('!reset');
 
 // ---------------------------------------------------------------- Web Serial, files, demo
-let port = null, reader = null, writer = null;
+let port = null, reader = null, writer = null, closing = false, lastData = 0, quiet = false;
 $('bConnect').onclick = async () => {
-  if (port) { try { await reader?.cancel(); } catch (e) {} return; }
+  if (port) { closing = true; try { await reader?.cancel(); } catch (e) {} return; }
+  closing = false;
   if (!('serial' in navigator)) { setStatus('Web Serial needs Chrome or Edge', 'bad'); return; }
   try {
     port = await navigator.serial.requestPort(); await port.open({ baudRate: 460800, bufferSize: 65536 });
     writer = port.writable.getWriter(); stopDemo(); $('bClear').onclick(); resetSignal(); setStatus('connected', 'on'); $('bConnect').textContent = 'Disconnect'; readLoop(); setTimeout(() => send('!get'), 600);
   } catch (e) { port = null; setStatus('connect failed', 'bad'); log('connect failed: ' + e.message + ' (is the Arduino Serial Monitor or the other page holding the port?)'); }
 };
-async function readLoop() {
-  const dec = new TextDecoderStream(), closed = port.readable.pipeTo(dec.writable).catch(() => {});
-  reader = dec.readable.getReader(); let rest = '';
-  try { for (;;) { const { value, done } = await reader.read(); if (done) break; const parts = (rest + value).split('\n'); rest = parts.pop(); for (const l of parts) onLine(l.trimEnd()); } }
-  catch (e) { log('read error: ' + e.message); }
-  finally { try { reader.releaseLock(); } catch (e) {} await closed; try { writer?.releaseLock(); } catch (e) {} try { await port.close(); } catch (e) {}
-    port = reader = writer = null; setStatus('not connected'); $('bConnect').textContent = 'Connect device'; }
+// Keeps reading through serial glitches (break, framing, parity, overrun: Web Serial then hands out a new port.readable)
+// and through a bad line (one line that throws is logged and skipped). Only Disconnect or a lost device ends it.
+let lineErrors = 0;
+function onLineSafe(l) {
+  try { onLine(l); }
+  catch (e) { if (++lineErrors <= 20) log(`page error on line "${l.slice(0, 70)}": ${e.message}`); console.error(e, l); }
 }
+async function readLoop() {
+  let glitches = 0;
+  while (port && port.readable && !closing) {
+    let pipeErr = null;
+    const dec = new TextDecoderStream(), closed = port.readable.pipeTo(dec.writable).catch(e => { pipeErr = e; });
+    reader = dec.readable.getReader(); let rest = '';
+    try { for (;;) { const { value, done } = await reader.read(); if (done) break; lastData = performance.now(); if (quiet) { quiet = false; setStatus('connected', 'on'); log('data is back'); } const parts = (rest + value).split('\n'); rest = parts.pop(); for (const l of parts) onLineSafe(l.trimEnd()); } }
+    catch (e) { if (!closing) log(`read error: ${e.name}: ${e.message}`); }
+    finally { try { reader.releaseLock(); } catch (e) {} await closed; }
+    if (closing) break;
+    if (pipeErr) log(`serial: ${pipeErr.name}: ${pipeErr.message}`);
+    if (!port.readable) { log('device lost (USB unplugged or reset?)'); break; }
+    if (++glitches > 50) { log('too many serial errors, giving up'); break; }
+    setStatus(`connected · recovered from serial glitch ×${glitches}`, 'warn'); log('serial glitch: reading on');
+  }
+  try { writer?.releaseLock(); } catch (e) {} try { await port?.close(); } catch (e) {}
+  port = reader = writer = null; setStatus('not connected', closing ? '' : 'bad'); $('bConnect').textContent = 'Connect device'; closing = false;
+}
+// Data watchdog: if the device goes quiet while connected, say so (a frozen page and a silent device look the same otherwise)
+setInterval(() => { if (port && lastData && performance.now() - lastData > 2000) { if (!quiet) log('device went quiet'); quiet = true; setStatus(`connected · NO DATA for ${((performance.now() - lastData) / 1000).toFixed(0)} s`, 'bad'); } }, 1000);
 function send(s) { if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {}); else log('not connected: "' + s + '" was not sent'); }
 $('bOpen').onclick = () => $('file').click();
 $('file').onchange = async e => {
