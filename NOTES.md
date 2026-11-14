@@ -353,3 +353,13 @@ Rule 0 (old absolute rule) is still there: `!set rule 0`.
 - New commands: `!pwr` (PWRKEY pulse now: it TOGGLES, so it switches a running modem off) and `!pwrhold [s]` (hold GPIO16 high to measure it; the pin reads itself back).
 - Opening the serial port restarts the ESP32 but not the modem; the boot check sees it answering and sends no pulse.
 - Li-po on the SIM board = modem independent of the rocker, so laptop + live page + calls work together (no 5 V conflict). The Li-po is not charged in this setup (the board charges only from the Pico's VBUS): check `!modem` → +CBC.
+
+## Speaker, voice clips and Bluetooth (2026-11-14)
+
+- Speaker chain works (I2S → PCM5102A → ZK-502M → speaker). The amp is on the power bank's 5 V line behind the rocker, so it is silent on laptop USB. `volume` is 100 % (stored); the rest is the ZK-502M knob.
+- Start-up chime: two neutral notes ~1.5 s after power-up (`chime` setting, 1/0). Never the voice.
+- Speaker test commands: `!play q|c`, `!tone [Hz] [s]`, `!stop` (no alarm, no call).
+- Voice clips from the team's MP3s (`Minden_Rendben.mp3` → question, `Segitseget_Hivok.mp3` → calling) are in `firmware/rezon/clips.h`: 1.18 s and 1.39 s at 16 kHz. Regenerate with `firmware/tools/mkclips.js` (instructions in its header).
+- Shaking the box does not trigger an alarm, by design (each shake counts as a step and lifts the level). Test with a 2 s button hold or a real fall.
+- **Bluetooth LE link** (Nordic UART service, name REZON): every line goes to USB and BLE; samples travel as `B,<base64>` lines (20 × 3-byte samples, ~4 kB/s). Train page: "Bluetooth" button (recordings store them as D lines, so replay works). Live page: key B. Tested: connected, `!get` round-trips over BLE, no dropped bytes. Firmware is 749 kB (57 %).
+- Stage setup now: power bank, rocker on (modem, amp, calls live), laptop pages over Bluetooth. No USB needed, so no 5 V conflict.

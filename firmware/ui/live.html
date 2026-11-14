@@ -191,6 +191,7 @@ function localTrigger(v) {
 let alertTimer = null;
 function onLine(l) {
   if (l.charCodeAt(0) === 68 && l[1] === ',') { const c = parseInt(l.slice(2), 10); if (Number.isFinite(c)) pushCounts(c); return; }   // D,
+  if (l.charCodeAt(0) === 66 && l[1] === ',') { unpackB(l, pushCounts); return; }                                                      // B, (Bluetooth)
   const p = l.split(',');
   switch (p[0]) {
     case 'S': { const g = +p[3]; if (g > 0 && g !== gain) { gain = g; resetFilter(); } break; }
@@ -210,7 +211,7 @@ function onLine(l) {
 // ---------------------------------------------------------------- Web Serial
 let port = null, reader = null, writer = null;
 function setDot(cls, text) { $('dot').className = cls || ''; if (text !== undefined) $('hint').textContent = text; }
-const HINT = 'C csatlakozás · D demó · F esés · R alaphelyzet · H elrejt';
+const HINT = 'C csatlakozás · B bluetooth · D demó · F esés · R alaphelyzet · H elrejt';
 async function connect() {
   if (port) { try { await reader?.cancel(); } catch (e) {} return; }
   if (!('serial' in navigator)) { setDot('bad', 'Web Serial: Chrome vagy Edge kell'); return; }
@@ -228,7 +229,42 @@ async function readLoop() {
   catch (e) {} finally { try { reader.releaseLock(); } catch (e) {} await closed; try { writer?.releaseLock(); } catch (e) {} try { await port.close(); } catch (e) {}
     port = reader = writer = null; setDot('bad', 'kapcsolat megszakadt · ' + HINT); }
 }
-function send(s) { if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {}); }
+function send(s) { if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {}); if (bleRx) bleSend(s); }
+
+// ---------------------------------------------------------------- Bluetooth (BLE, Nordic UART service): the same lines as USB, samples packed in B lines
+const NUS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e', NUS_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+let ble = null, bleRx = null, bleRest = '', bleQ = Promise.resolve(), bleClosing = false;
+const bleDec = new TextDecoder();
+function unpackB(l, each) {
+  let s; try { s = atob(l.slice(2)); } catch (e) { return; }
+  for (let i = 0; i + 2 < s.length; i += 3) { let v = (s.charCodeAt(i) << 16) | (s.charCodeAt(i + 1) << 8) | s.charCodeAt(i + 2); if (v & 0x800000) v -= 0x1000000; each(v); }
+}
+function bleSend(s) {
+  const b = new TextEncoder().encode(s + '\n');
+  bleQ = bleQ.then(async () => { for (let i = 0; i < b.length; i += 20) await bleRx.writeValueWithoutResponse(b.slice(i, i + 20)); }).catch(() => {});
+}
+async function bleConnect() {
+  if (ble) { bleClosing = true; ble.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) { setDot('bad', 'Web Bluetooth: Chrome vagy Edge kell'); return; }
+  try {
+    const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'REZON' }], optionalServices: [NUS] });
+    dev.addEventListener('gattserverdisconnected', () => {
+      ble = bleRx = null; bleRest = '';
+      if (!port) setDot(bleClosing ? '' : 'bad', (bleClosing ? 'bluetooth bontva · ' : 'bluetooth kapcsolat megszakadt · ') + HINT); bleClosing = false;
+    });
+    setDot('', 'bluetooth: kapcsolódás…');
+    const svc = await (await dev.gatt.connect()).getPrimaryService(NUS);
+    bleRx = await svc.getCharacteristic(NUS_RX);
+    const tx = await svc.getCharacteristic(NUS_TX);
+    tx.addEventListener('characteristicvaluechanged', ev => {
+      const parts = (bleRest + bleDec.decode(ev.target.value, { stream: true })).split('\n'); bleRest = parts.pop();
+      for (const l of parts) { try { onLine(l.trimEnd()); } catch (e) { console.error(e, l); } }
+    });
+    await tx.startNotifications();
+    ble = dev; stopDemo(); resetFilter(); warm = 1200; sawAlarmLines = false;
+    setDot('on', 'bluetooth · csatlakozva · ' + HINT);
+  } catch (e) { bleRx = null; if (e.name !== 'NotFoundError') setDot('bad', 'bluetooth nem sikerült: ' + e.message); }
+}
 
 // ---------------------------------------------------------------- demo signal and log playback
 let demo = null, demoT = 0, demoFall = -1e9, demoStep = -1e9;
@@ -241,7 +277,7 @@ function demoSample() {
   demoT++; return v;
 }
 function startDemo() {
-  if (port) return;
+  if (port || ble) return;
   stopPlay(); setDot('demo', 'demó · F esés · S lépés · ' + HINT);
   let last = performance.now();
   demo = setInterval(() => {
@@ -273,7 +309,7 @@ addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.fil
 
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if (k === 'c') connect(); else if (k === 'd') demo ? stopDemo() : startDemo(); else if (k === 'f') demoFallNow(); else if (k === 's') demoStepNow();
+  if (k === 'c') connect(); else if (k === 'b') bleConnect(); else if (k === 'd') demo ? stopDemo() : startDemo(); else if (k === 'f') demoFallNow(); else if (k === 's') demoStepNow();
   else if (k === 'r' || k === 'escape') reset(); else if (k === 't') send('!test'); else if (k === 'h') $('corner').classList.toggle('hide');
 });
 

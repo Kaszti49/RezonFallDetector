@@ -21,6 +21,8 @@
     !modem             SIM, signal, registration                 !at <cmd>    raw AT command to the modem
     !pwr               pulse the modem's PWRKEY now (switches it on, or OFF if it was on)
     !pwrhold [s]       hold GPIO16 (PWRKEY) high for s seconds (default 15) to measure it; reports the pin's own level
+    !play q|c          play the question / calling sound (no alarm, no call)
+    !tone [Hz] [s]     steady test tone (default 440 Hz, 3 s)       !stop        stop the sound
     !cal               floor calibration (phase 4, not written yet)
 */
 #include <SPI.h>
@@ -29,6 +31,9 @@
 #include <esp_system.h>
 #include <esp_task_wdt.h>
 #include <driver/gpio.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLE2902.h>
 #include "src/core/rezon_core.h"
 #include "src/core/rezon_proto.h"
 #include "src/core/rezon_alarm.h"
@@ -72,6 +77,82 @@ static volatile bool adcRunning = false, streamOn = true, reqClearFall = false;
 static volatile uint32_t sampleCount = 0, crcErrors = 0, dropped = 0;
 static uint8_t gainCode = 2;
 static int volumePct = 10;                // voice level, % of full scale. Start low: the amp has its own volume knob.
+static int chimeOn = 1;                   // play the question sound once at power-up ("I'm on"; also a speaker test on battery)
+
+// ---------------------------------------------------------------- Bluetooth LE link (Nordic UART service), the pages' wireless alternative to USB
+// Every text line goes to USB and, while a BLE client is connected, into bleBuf; loop() sends bleBuf in MTU-sized notifications.
+// Raw samples are too many for BLE as D lines: they travel as "B,<base64>" lines, 20 geophone samples (3 bytes each, big-endian) per line.
+#define NUS_SVC "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+#define NUS_RX  "6e400002-b5a3-f393-e0a9-e50e24dcca9e"    // page -> Rezon (write)
+#define NUS_TX  "6e400003-b5a3-f393-e0a9-e50e24dcca9e"    // Rezon -> page (notify)
+static BLECharacteristic *bleTx = nullptr; static BLEServer *bleSrv = nullptr;
+static volatile bool bleConn = false; static volatile uint16_t bleMtu = 23; static volatile uint32_t bleDropped = 0;
+static portMUX_TYPE bleMux = portMUX_INITIALIZER_UNLOCKED;
+static uint8_t bleBuf[12288]; static volatile uint16_t bleHead = 0, bleTail = 0;            // text out (ring)
+static char bleIn[256]; static volatile uint16_t bleInHead = 0, bleInTail = 0;              // commands in (ring)
+static void bleQueue(const uint8_t *d, size_t n) {
+  if (!bleConn || !n) return;
+  portENTER_CRITICAL(&bleMux);
+  const uint16_t used = (uint16_t)((bleHead - bleTail + sizeof bleBuf) % sizeof bleBuf);
+  if (used + n >= sizeof bleBuf - 1) bleDropped += n;                                          // whole write dropped, never half a line
+  else for (size_t i = 0; i < n; i++) { bleBuf[bleHead] = d[i]; bleHead = (bleHead + 1) % sizeof bleBuf; }
+  portEXIT_CRITICAL(&bleMux);
+}
+class Tee : public Print {                                                                     // USB + BLE
+ public:
+  size_t write(uint8_t c) override { Serial.write(c); bleQueue(&c, 1); return 1; }
+  size_t write(const uint8_t *b, size_t n) override { Serial.write(b, n); bleQueue(b, n); return n; }
+};
+static Tee out;
+class BleSrvCb : public BLEServerCallbacks {
+  void onConnect(BLEServer *) override { portENTER_CRITICAL(&bleMux); bleHead = bleTail = 0; portEXIT_CRITICAL(&bleMux); bleMtu = 23; bleConn = true; }
+  void onDisconnect(BLEServer *s) override { bleConn = false; s->startAdvertising(); }
+};
+class BleRxCb : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *c) override {
+    auto v = c->getValue();
+    for (size_t i = 0; i < v.length(); i++) { const uint16_t nx = (bleInHead + 1) % sizeof bleIn; if (nx == bleInTail) break; bleIn[bleInHead] = v[i]; bleInHead = nx; }
+  }
+};
+static void bleStart() {
+  BLEDevice::init("REZON"); BLEDevice::setMTU(247);
+  bleSrv = BLEDevice::createServer(); bleSrv->setCallbacks(new BleSrvCb());
+  BLEService *s = bleSrv->createService(NUS_SVC);
+  bleTx = s->createCharacteristic(NUS_TX, BLECharacteristic::PROPERTY_NOTIFY); bleTx->addDescriptor(new BLE2902());
+  BLECharacteristic *rx = s->createCharacteristic(NUS_RX, BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
+  rx->setCallbacks(new BleRxCb());
+  s->start();
+  BLEAdvertising *a = BLEDevice::getAdvertising(); a->addServiceUUID(NUS_SVC); a->setScanResponse(true); BLEDevice::startAdvertising();
+}
+static void bleSend(uint32_t now) {                                                            // from loop(): paced notifications
+  static uint32_t last = 0;
+  if (!bleConn || !bleTx || now - last < 8) return;
+  last = now;
+  { const uint16_t m = bleSrv->getPeerMTU(bleSrv->getConnId()); if (m >= 23) bleMtu = m; }
+  const int chunk = bleMtu > 23 ? (bleMtu - 3 > 244 ? 244 : bleMtu - 3) : 20;
+  for (int k = 0; k < 4; k++) {
+    uint8_t tmp[244]; int n = 0;
+    portENTER_CRITICAL(&bleMux);
+    while (n < chunk && bleTail != bleHead) { tmp[n++] = bleBuf[bleTail]; bleTail = (bleTail + 1) % sizeof bleBuf; }
+    const uint16_t left = (uint16_t)((bleHead - bleTail + sizeof bleBuf) % sizeof bleBuf);
+    portEXIT_CRITICAL(&bleMux);
+    if (!n) break;
+    bleTx->setValue(tmp, n); bleTx->notify();
+    if (left < 1024) break;                                                                    // more than one per tick only to catch up
+  }
+}
+static void blePackSample(int32_t c) {                                                         // 20 samples -> one B line
+  static uint8_t blk[60]; static int k = 0;
+  if (!bleConn) { k = 0; return; }
+  blk[3 * k] = (uint8_t)(c >> 16); blk[3 * k + 1] = (uint8_t)(c >> 8); blk[3 * k + 2] = (uint8_t)c;
+  if (++k < 20) return;
+  k = 0;
+  static const char *A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  char line[2 + 80 + 2]; int j = 0; line[j++] = 'B'; line[j++] = ',';
+  for (int i = 0; i < 60; i += 3) { const uint32_t v = (blk[i] << 16) | (blk[i + 1] << 8) | blk[i + 2]; line[j++] = A[v >> 18]; line[j++] = A[(v >> 12) & 63]; line[j++] = A[(v >> 6) & 63]; line[j++] = A[v & 63]; }
+  line[j++] = '\n';
+  bleQueue((const uint8_t *)line, j);
+}
 
 // raw samples for the D lines: written by the sampling task, read by loop()
 static int32_t ring[2048][2]; static volatile uint16_t ringHead = 0, ringTail = 0;
@@ -102,7 +183,7 @@ static void writeReg(uint8_t a, uint16_t v) { uint8_t rx[12]; frame(CMD_WREG(a),
 static void setGain(uint8_t g) {
   gainCode = g & 7; writeReg(REG_GAIN, (gainCode << 4) | gainCode);
   xSemaphoreTake(detMux, portMAX_DELAY); det.cfg.gain = 1 << gainCode; xSemaphoreGive(detMux);
-  Serial.printf("# gain x%d (full scale +-%.1f mm/s)\n", 1 << gainCode, 1200.0 / (1 << gainCode) / 20.9);
+  out.printf("# gain x%d (full scale +-%.1f mm/s)\n", 1 << gainCode, 1200.0 / (1 << gainCode) / 20.9);
 }
 static bool startAdc() {
   adcRunning = false; delay(5);
@@ -111,8 +192,8 @@ static bool startAdc() {
   delay(5);
   digitalWrite(PIN_RST, LOW); delay(2); digitalWrite(PIN_RST, HIGH); delay(10);
   uint16_t id = readReg(REG_ID);
-  Serial.printf("# ADS131M02 ID = 0x%04X (expect 0x22xx)\n", id);
-  if ((id & 0xFF00) != 0x2200) { Serial.println("# ERROR: no ADC answer. Check 3V3/GND, SCK 12, MISO 13, MOSI 14, CS 11, CS2 9 (clock), RST 8."); return false; }
+  out.printf("# ADS131M02 ID = 0x%04X (expect 0x22xx)\n", id);
+  if ((id & 0xFF00) != 0x2200) { out.println("# ERROR: no ADC answer. Check 3V3/GND, SCK 12, MISO 13, MOSI 14, CS 11, CS2 9 (clock), RST 8."); return false; }
   writeReg(REG_CLOCK, CLOCK_1KSPS);
   setGain(gainCode);
   xSemaphoreTake(detMux, portMAX_DELAY); det.reset(); xSemaphoreGive(detMux);
@@ -154,6 +235,7 @@ static void samplingTask(void *) {
 #define AUDIO_RATE 16000
 static I2SClass i2s;
 static volatile bool audioStop = false, audioOk = false;
+static volatile float toneHz = 440.f; static volatile int toneMs = 3000;   // !tone
 static void playSamples(const int16_t *pcm, uint32_t n) {
   int16_t out[256 * 2];
   for (uint32_t i = 0; i < n && !audioStop;) {
@@ -175,6 +257,16 @@ static void audioTask(void *) {
   for (;;) {
     if (xQueueReceive(audioQ, &clip, portMAX_DELAY) != pdTRUE || !audioOk) continue;
     audioStop = false;
+    if (clip == 4) {                                                                         // start-up chime: always two short neutral notes, never the voice
+      playTone(659.26f, 160, 90); playTone(987.77f, 260, 140);
+      int16_t z[64] = { 0 }; for (int i = 0; i < 20; i++) i2s.write((uint8_t *)z, sizeof z);
+      continue;
+    }
+    if (clip == 3) {                                                                         // !tone: steady test tone
+      playTone(toneHz, toneMs, 1e9f);
+      int16_t z[64] = { 0 }; for (int i = 0; i < 20; i++) i2s.write((uint8_t *)z, sizeof z);
+      continue;
+    }
 #if HAVE_CLIPS
     if (clip == 1) playSamples(CLIP_QUESTION, sizeof(CLIP_QUESTION) / 2); else playSamples(CLIP_CALLING, sizeof(CLIP_CALLING) / 2);
 #else
@@ -189,7 +281,7 @@ static void audioTask(void *) {
 enum ModemCmd : uint8_t { MC_DIAL = 1, MC_HANGUP, MC_STATUS, MC_RAW, MC_PWR };
 enum ModemRes : uint8_t { MR_DIAL_OK = 1, MR_DIAL_FAIL, MR_CALL_ENDED };
 static volatile bool modemReady = false; static char rawAt[64];
-static void mlog(const char *s) { Serial.printf("M,%s\n", s); }
+static void mlog(const char *s) { out.printf("M,%s\n", s); }
 static String atCmd(const char *cmd, uint32_t ms = 1000) {
   while (Serial1.available()) Serial1.read();
   Serial1.print(cmd); Serial1.print("\r");
@@ -297,10 +389,11 @@ static Param params[] = {
   { "impactWinMs", nullptr, &det.cfg.impactWinMs }, { "getUpSteps", nullptr, &det.cfg.getUpSteps }, { "volume", nullptr, &volumePct },
   { "rule", nullptr, &det.cfg.rule }, { "relMin", &det.cfg.relMin, nullptr }, { "holdMin", &det.cfg.holdMin, nullptr },
   { "holdFrac", &det.cfg.holdFrac, nullptr }, { "levelMs", nullptr, &det.cfg.levelMs }, { "levelGapMs", nullptr, &det.cfg.levelGapMs },
+  { "chime", nullptr, &chimeOn },
 };
 static void printParams() {
-  for (auto &p : params) { if (p.f) Serial.printf("P,%s,%.4g\n", p.name, *p.f); else Serial.printf("P,%s,%d\n", p.name, *p.i); }
-  Serial.printf("P,profile,%s\n", alarmSeq.prof.name);
+  for (auto &p : params) { if (p.f) out.printf("P,%s,%.4g\n", p.name, *p.f); else out.printf("P,%s,%d\n", p.name, *p.i); }
+  out.printf("P,profile,%s\n", alarmSeq.prof.name);
 }
 static bool setParam(const char *name, float v) {
   for (auto &p : params) if (!strcmp(p.name, name)) {
@@ -320,7 +413,7 @@ static void saveSettings() {
   prefs.begin("rezon", false);
   for (auto &p : params) { if (p.f) prefs.putFloat(p.name, *p.f); else prefs.putInt(p.name, *p.i); }
   prefs.putUChar("gain", gainCode); prefs.putString("profile", alarmSeq.prof.name);
-  prefs.end(); Serial.println("# settings stored in flash");
+  prefs.end(); out.println("# settings stored in flash");
 }
 
 // ---------------------------------------------------------------- LED and button
@@ -341,7 +434,7 @@ static void pollButton(uint32_t now) {
   static bool stable = false, last = false; static uint32_t tChange = 0;
   const bool raw = digitalRead(PIN_BTN) == LOW;
   if (raw != last) { last = raw; tChange = now; }
-  if (raw != stable && now - tChange >= 30) { stable = raw; alarmSeq.button(stable, now); if (stable) Serial.println("# button"); }   // 30 ms debounce
+  if (raw != stable && now - tChange >= 30) { stable = raw; alarmSeq.button(stable, now); if (stable) out.println("# button"); }   // 30 ms debounce
 }
 
 // ---------------------------------------------------------------- commands
@@ -349,12 +442,12 @@ static void pollButton(uint32_t now) {
 static uint32_t pwrHoldUntil = 0, pwrHoldNext = 0;
 static void pwrHold(uint32_t now, int sec) {
   digitalWrite(PIN_PWRKEY, HIGH); pwrHoldUntil = now + sec * 1000UL; pwrHoldNext = now + 300;
-  Serial.printf("# GPIO16 (PWRKEY) held HIGH for %d s: measure the ESP32 pin 16 and the SIM board PWR pin against GND now\n", sec);
+  out.printf("# GPIO16 (PWRKEY) held HIGH for %d s: measure the ESP32 pin 16 and the SIM board PWR pin against GND now\n", sec);
 }
 static void pwrHoldTick(uint32_t now) {
   if (!pwrHoldUntil) return;
-  if ((int32_t)(now - pwrHoldUntil) >= 0) { digitalWrite(PIN_PWRKEY, LOW); pwrHoldUntil = 0; Serial.println("# GPIO16 back LOW"); return; }
-  if ((int32_t)(now - pwrHoldNext) >= 0) { pwrHoldNext = now + 2000; Serial.printf("# GPIO16 set HIGH, the pin itself reads %s\n", gpio_get_level((gpio_num_t)PIN_PWRKEY) ? "HIGH (ok)" : "LOW: something pulls it down (short to GND, or a load without resistor)"); }
+  if ((int32_t)(now - pwrHoldUntil) >= 0) { digitalWrite(PIN_PWRKEY, LOW); pwrHoldUntil = 0; out.println("# GPIO16 back LOW"); return; }
+  if ((int32_t)(now - pwrHoldNext) >= 0) { pwrHoldNext = now + 2000; out.printf("# GPIO16 set HIGH, the pin itself reads %s\n", gpio_get_level((gpio_num_t)PIN_PWRKEY) ? "HIGH (ok)" : "LOW: something pulls it down (short to GND, or a load without resistor)"); }
 }
 static void handleLine(char *s, uint32_t now) {      // now = loop()'s clock: a fresh millis() here can be 1 ms ahead and make tick() skip a state
   if (s[0] == 'G' && s[1] >= '0' && s[1] <= '7' && !s[2]) { if (adcRunning) setGain(s[1] - '0'); return; }
@@ -362,18 +455,33 @@ static void handleLine(char *s, uint32_t now) {      // now = loop()'s clock: a 
   if (s[0] != '!') return;
   char *arg = strchr(s, ' '); if (arg) *arg++ = 0;
   if (!strcmp(s, "!get")) printParams();
-  else if (!strcmp(s, "!set") && arg) { char *v = strchr(arg, ' '); if (v) { *v++ = 0; if (setParam(arg, atof(v))) printParams(); else Serial.printf("# unknown setting %s\n", arg); } }
+  else if (!strcmp(s, "!set") && arg) { char *v = strchr(arg, ' '); if (v) { *v++ = 0; if (setParam(arg, atof(v))) printParams(); else out.printf("# unknown setting %s\n", arg); } }
   else if (!strcmp(s, "!save")) saveSettings();
-  else if (!strcmp(s, "!profile") && arg) { alarmSeq.prof = !strcmp(arg, "home") ? PROFILE_HOME : PROFILE_STAGE; Serial.printf("P,profile,%s\n", alarmSeq.prof.name); }
+  else if (!strcmp(s, "!profile") && arg) { alarmSeq.prof = !strcmp(arg, "home") ? PROFILE_HOME : PROFILE_STAGE; out.printf("P,profile,%s\n", alarmSeq.prof.name); }
   else if (!strcmp(s, "!stream") && arg) streamOn = atoi(arg) != 0;
   else if (!strcmp(s, "!test")) alarmSeq.test(now);
   else if (!strcmp(s, "!reset")) alarmSeq.reset(now);
   else if (!strcmp(s, "!modem")) { uint8_t c = MC_STATUS; xQueueSend(modemQ, &c, 0); }
   else if (!strcmp(s, "!pwr")) { uint8_t c = MC_PWR; xQueueSend(modemQ, &c, 0); }
   else if (!strcmp(s, "!pwrhold")) pwrHold(now, arg ? atoi(arg) : 15);
+  // speaker test, no alarm and no call
+  else if (!strcmp(s, "!play")) {
+    uint8_t c = (arg && arg[0] == 'c') ? 2 : 1;
+    if (!audioOk) out.println("# I2S did not start at boot: no sound possible");
+    else { xQueueSend(audioQ, &c, 0); out.printf("# playing the %s sound, volume %d %%\n", c == 1 ? "question" : "calling", volumePct); }
+  }
+  else if (!strcmp(s, "!tone")) {
+    float hz = 440.f, sec = 3.f;
+    if (arg) { hz = atof(arg); const char *b = strchr(arg, ' '); if (b) sec = atof(b + 1); }
+    toneHz = hz < 50.f ? 50.f : (hz > 8000.f ? 8000.f : hz); toneMs = (int)(constrain(sec, 0.2f, 30.f) * 1000);
+    uint8_t c = 3;
+    if (!audioOk) out.println("# I2S did not start at boot: no sound possible");
+    else { audioStop = true; xQueueSend(audioQ, &c, 0); out.printf("# tone %.0f Hz for %.1f s, volume %d %%\n", (double)toneHz, toneMs / 1000.0, volumePct); }
+  }
+  else if (!strcmp(s, "!stop")) { audioStop = true; out.println("# sound stopped"); }
   else if (!strcmp(s, "!at") && arg) { strlcpy(rawAt, arg, sizeof rawAt); uint8_t c = MC_RAW; xQueueSend(modemQ, &c, 0); }
-  else if (!strcmp(s, "!cal")) Serial.println("# calibration is phase 4: not written yet. Set stepMin / impactMin / stepRef by hand for now.");
-  else Serial.printf("# unknown command %s\n", s);
+  else if (!strcmp(s, "!cal")) out.println("# calibration is phase 4: not written yet. Set stepMin / impactMin / stepRef by hand for now.");
+  else out.printf("# unknown command %s\n", s);
 }
 static void pollSerial(uint32_t now) {
   static char buf[80]; static uint8_t n = 0;
@@ -381,6 +489,12 @@ static void pollSerial(uint32_t now) {
     char c = Serial.read();
     if (c == '\n' || c == '\r') { buf[n] = 0; if (n) handleLine(buf, now); n = 0; }
     else if (n < sizeof(buf) - 1) buf[n++] = c;
+  }
+  static char bbuf[80]; static uint8_t bn = 0;                                                  // the same commands over Bluetooth
+  while (bleInTail != bleInHead) {
+    const char c = bleIn[bleInTail]; bleInTail = (bleInTail + 1) % sizeof bleIn;
+    if (c == '\n' || c == '\r') { bbuf[bn] = 0; if (bn) handleLine(bbuf, now); bn = 0; }
+    else if (bn < sizeof(bbuf) - 1) bbuf[bn++] = c;
   }
 }
 
@@ -397,30 +511,34 @@ void setup() {
   noteQ = xQueueCreate(16, sizeof(Note)); audioQ = xQueueCreate(4, 1); modemQ = xQueueCreate(4, 1); modemResQ = xQueueCreate(4, 1);
   loadSettings();
   delay(300);
-  Serial.println("\n# REZON fall detector");
+  out.println("\n# REZON fall detector");
   {
     const esp_reset_reason_t r = esp_reset_reason();
     const char *why = r == ESP_RST_POWERON ? "power-on" : r == ESP_RST_BROWNOUT ? "BROWNOUT: the supply dipped (power, loose wire, amp)"
                     : r == ESP_RST_PANIC ? "CRASH (panic)" : (r == ESP_RST_TASK_WDT || r == ESP_RST_INT_WDT || r == ESP_RST_WDT) ? "WATCHDOG: a task hung"
                     : r == ESP_RST_SW ? "software restart" : r == ESP_RST_EXT ? "reset pin" : r == ESP_RST_USB ? "USB (port opened / upload)" : "other";
-    Serial.printf("# restart reason: %s (%d)\n", why, (int)r);
+    out.printf("# restart reason: %s (%d)\n", why, (int)r);
   }
-  Serial.printf("# profile %s, phone number %s\n", alarmSeq.prof.name, strlen(REZON_PHONE) ? "set" : "NOT SET (no secrets.h)");
+  out.printf("# profile %s, phone number %s\n", alarmSeq.prof.name, strlen(REZON_PHONE) ? "set" : "NOT SET (no secrets.h)");
   SPI.begin(PIN_SCK, PIN_MISO, PIN_MOSI);
   startAdc();
   attachInterrupt(digitalPinToInterrupt(PIN_DRDY), onDrdy, FALLING);
   i2s.setPins(PIN_BCK, PIN_LCK, PIN_DIN);
   audioOk = i2s.begin(I2S_MODE_STD, AUDIO_RATE, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO);
-  if (!audioOk) Serial.println("# ERROR: I2S did not start");
+  if (!audioOk) out.println("# ERROR: I2S did not start");
+  bleStart();
+  out.println("# Bluetooth: advertising as REZON");
 #if HAVE_CLIPS
   alarmSeq.questionMs = sizeof(CLIP_QUESTION) / 2 * 1000UL / AUDIO_RATE + 150; alarmSeq.callingMs = sizeof(CLIP_CALLING) / 2 * 1000UL / AUDIO_RATE + 150;
 #else
-  Serial.println("# no clips.h: playing placeholder tones instead of the voice");
+  out.println("# no clips.h: playing placeholder tones instead of the voice");
   alarmSeq.questionMs = 1300; alarmSeq.callingMs = 1100;
 #endif
   xTaskCreatePinnedToCore(samplingTask, "sample", 8192, nullptr, configMAX_PRIORITIES - 2, nullptr, 1);
   xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 3, nullptr, 0);
   xTaskCreatePinnedToCore(modemTask, "modem", 6144, nullptr, 2, nullptr, 0);
+  // start-up chime, ~1.5 s after power-on so the amp (powered at the same moment) is awake
+  if (chimeOn && audioOk) { delay(1500); uint8_t c = 4; xQueueSend(audioQ, &c, 0); out.printf("# start-up chime, volume %d %%\n", volumePct); }
 }
 
 void loop() {
@@ -431,13 +549,14 @@ void loop() {
   // raw samples
   while (ringTail != ringHead) {
     const uint16_t t = ringTail;
-    if (streamOn) Serial.printf("D,%ld,%ld\n", (long)ring[t][0], (long)ring[t][1]);
+    if (streamOn) Serial.printf("D,%ld,%ld\n", (long)ring[t][0], (long)ring[t][1]);   // USB only; BLE gets them packed
+    blePackSample(ring[t][0]);
     ringTail = (t + 1) & 2047;
   }
   // detector notes
   Note o;
   while (xQueueReceive(noteQ, &o, 0) == pdTRUE) {
-    fmtNote(line, sizeof line, o, det); Serial.println(line);
+    fmtNote(line, sizeof line, o, det); out.println(line);
     if (o.kind == N_FALL) alarmSeq.fall(now);
     else if (o.kind == N_GOTUP) alarmSeq.gotUp(now);
   }
@@ -461,16 +580,19 @@ void loop() {
       default: break;
     }
   }
-  if (alarmSeq.takeChange()) Serial.printf("A,%s,%lu\n", ASTATE_NAME[alarmSeq.state()], (unsigned long)alarmSeq.stateLen());
+  if (alarmSeq.takeChange()) out.printf("A,%s,%lu\n", ASTATE_NAME[alarmSeq.state()], (unsigned long)alarmSeq.stateLen());
   showLed(now);
   pwrHoldTick(now);
+  bleSend(now);
+  { static bool was = false; if (bleConn != was) { was = bleConn; out.printf("# Bluetooth %s\n", was ? "connected" : "disconnected"); } }
 
   if (now - lastStat >= 1000) {
     const uint32_t sc = sampleCount, e = crcErrors; crcErrors = 0;
-    Serial.printf("S,%lu,%lu,%d,%lu,%.4f,%.4f,%d,%.4f,%.4f\n", (unsigned long)((sc - lastSamples) * 1000UL / (now - lastStat)), (unsigned long)e, 1 << gainCode,
+    out.printf("S,%lu,%lu,%d,%lu,%.4f,%.4f,%d,%.4f,%.4f\n", (unsigned long)((sc - lastSamples) * 1000UL / (now - lastStat)), (unsigned long)e, 1 << gainCode,
                   (unsigned long)det.nowMs(), det.background(), det.threshold(), det.walkers(), det.level(), det.impactThreshold());
-    if (dropped) { Serial.printf("# %lu samples not streamed (serial too slow); detection is not affected\n", (unsigned long)dropped); dropped = 0; }
-    if (!adcRunning) Serial.println("# ADC not running. Fix the wiring, then send R.");
+    if (dropped) { out.printf("# %lu samples not streamed (serial too slow); detection is not affected\n", (unsigned long)dropped); dropped = 0; }
+    if (bleDropped) { out.printf("# %lu bytes not sent over Bluetooth (link too slow); detection is not affected\n", (unsigned long)bleDropped); bleDropped = 0; }
+    if (!adcRunning) out.println("# ADC not running. Fix the wiring, then send R.");
     lastSamples = sc; lastStat = now;
   }
   delay(1);

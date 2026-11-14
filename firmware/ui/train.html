@@ -54,6 +54,7 @@
 <header>
   <h1>REZON <span>· training</span></h1>
   <button class="primary" id="bConnect">Connect device</button>
+  <button id="bBle" title="Wireless: Rezon on the power bank, rocker on">Bluetooth</button>
   <button id="bOpen">Open .log</button><input type="file" id="file" accept=".log,.csv,.txt" hidden>
   <button id="bDemo">Demo</button>
   <span class="pill" id="status">not connected</span>
@@ -141,6 +142,7 @@ let rec = null, recName = '';
 const FEATS = ['lnE', 'dur', 'nSub', 'rise', 'decay', 'band', 'fc', 'rel'];
 function onLine(l) {
   if (!l) return;
+  if (l.charCodeAt(0) === 66 && l[1] === ',') { unpackB(l, c => { if (rec) rec.push(`D,${c},0`); pushCounts(c); }); return; }   // B, (Bluetooth): stored as D lines, so recordings replay
   if (rec) rec.push(l);
   if (l.charCodeAt(0) === 68 && l[1] === ',') { const c = parseInt(l.slice(2), 10); if (Number.isFinite(c)) pushCounts(c); return; }
   const p = l.split(',');
@@ -205,7 +207,7 @@ $('bClear').onclick = () => { events.length = 0; marks.length = 0; sel = null; v
 // ---------------------------------------------------------------- settings
 const PARAMS = [['rule', 'Fall rule (0 absolute, 1 normalised)'], ['relMin', 'Impact ≥ × step level (rule 1)'], ['holdMin', 'Fall: stays ≥ 30 % of own peak (s)'],
   ['stepMin', 'Step minimum (mm/s)'], ['impactMin', 'Impact minimum (mm/s; rule 1: floor)'], ['kOn', 'Start: × background variance'], ['scoreMin', 'Fall score threshold (rule 0)'],
-  ['walkerMargin', 'Impact ≥ × walkers’ steps'], ['stepRef', 'Typical step peak (mm/s; level when quiet)'], ['segMode', 'End rule (0 variance, 1 60 % of peak)'], ['ringMs', 'Ringing ignored (ms)'], ['simMin', 'Track: min. similarity'], ['volume', 'Voice volume (%)']];
+  ['walkerMargin', 'Impact ≥ × walkers’ steps'], ['stepRef', 'Typical step peak (mm/s; level when quiet)'], ['segMode', 'End rule (0 variance, 1 60 % of peak)'], ['ringMs', 'Ringing ignored (ms)'], ['simMin', 'Track: min. similarity'], ['volume', 'Voice volume (%)'], ['chime', 'Start-up chime (1 on, 0 off)']];
 PARAMS.forEach(([k, t]) => { const d = document.createElement('div'); d.className = 'row'; d.innerHTML = `${t} <input data-k="${k}" inputmode="decimal">`; d.firstElementChild.onchange = ev => send(`!set ${k} ${ev.target.value}`); $('params').appendChild(d); });
 $('gain').onchange = e => send('G' + e.target.value);
 $('profile').onchange = e => send('!profile ' + e.target.value);
@@ -248,8 +250,51 @@ async function readLoop() {
   port = reader = writer = null; setStatus('not connected', closing ? '' : 'bad'); $('bConnect').textContent = 'Connect device'; closing = false;
 }
 // Data watchdog: if the device goes quiet while connected, say so (a frozen page and a silent device look the same otherwise)
-setInterval(() => { if (port && lastData && performance.now() - lastData > 2000) { if (!quiet) log('device went quiet'); quiet = true; setStatus(`connected · NO DATA for ${((performance.now() - lastData) / 1000).toFixed(0)} s`, 'bad'); } }, 1000);
-function send(s) { if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {}); else log('not connected: "' + s + '" was not sent'); }
+setInterval(() => { if ((port || ble) && lastData && performance.now() - lastData > 2000) { if (!quiet) log('device went quiet'); quiet = true; setStatus(`connected · NO DATA for ${((performance.now() - lastData) / 1000).toFixed(0)} s`, 'bad'); } }, 1000);
+function send(s) {
+  if (writer) writer.write(new TextEncoder().encode(s + '\n')).catch(() => {});
+  if (bleRx) bleSend(s);
+  if (!writer && !bleRx) log('not connected: "' + s + '" was not sent');
+}
+
+// ---------------------------------------------------------------- Bluetooth (BLE, Nordic UART service): the same lines as USB, samples packed in B lines
+const NUS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e', NUS_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+let ble = null, bleRx = null, bleRest = '', bleQ = Promise.resolve(), bleClosing = false;
+const bleDec = new TextDecoder();
+function unpackB(l, each) {                // B,<base64>: 3 bytes per sample, big-endian signed 24-bit
+  let s; try { s = atob(l.slice(2)); } catch (e) { return; }
+  for (let i = 0; i + 2 < s.length; i += 3) { let v = (s.charCodeAt(i) << 16) | (s.charCodeAt(i + 1) << 8) | s.charCodeAt(i + 2); if (v & 0x800000) v -= 0x1000000; each(v); }
+}
+function bleSend(s) {                      // small writes, one after the other
+  const b = new TextEncoder().encode(s + '\n');
+  bleQ = bleQ.then(async () => { for (let i = 0; i < b.length; i += 20) await bleRx.writeValueWithoutResponse(b.slice(i, i + 20)); }).catch(e => log('Bluetooth send failed: ' + e.message));
+}
+function bleGone() {
+  ble = bleRx = null; bleRest = ''; $('bBle').textContent = 'Bluetooth'; $('bBle').classList.remove('on');
+  if (!port) setStatus('not connected', bleClosing ? '' : 'bad');
+  log(bleClosing ? 'Bluetooth disconnected' : 'Bluetooth link lost (out of range, or Rezon switched off?)'); bleClosing = false;
+}
+$('bBle').onclick = async () => {
+  if (ble) { bleClosing = true; ble.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) { setStatus('Web Bluetooth needs Chrome or Edge', 'bad'); return; }
+  try {
+    const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'REZON' }], optionalServices: [NUS] });
+    dev.addEventListener('gattserverdisconnected', bleGone);
+    setStatus('Bluetooth: connecting…', 'warn');
+    const svc = await (await dev.gatt.connect()).getPrimaryService(NUS);
+    bleRx = await svc.getCharacteristic(NUS_RX);
+    const tx = await svc.getCharacteristic(NUS_TX);
+    tx.addEventListener('characteristicvaluechanged', ev => {
+      lastData = performance.now(); if (quiet) { quiet = false; setStatus('connected · Bluetooth', 'on'); log('data is back'); }
+      const parts = (bleRest + bleDec.decode(ev.target.value, { stream: true })).split('\n'); bleRest = parts.pop();
+      for (const l of parts) onLineSafe(l.trimEnd());
+    });
+    await tx.startNotifications();
+    ble = dev; stopDemo(); $('bClear').onclick(); resetSignal(); lastData = performance.now();
+    setStatus('connected · Bluetooth', 'on'); $('bBle').textContent = 'Disconnect BT'; $('bBle').classList.add('on'); log('Bluetooth connected to ' + (dev.name || 'REZON'));
+    setTimeout(() => send('!get'), 600);
+  } catch (e) { bleRx = null; if (e.name !== 'NotFoundError') { setStatus('Bluetooth failed', 'bad'); log('Bluetooth: ' + e.message); } else setStatus(port ? 'connected' : 'not connected'); }
+};
 $('bOpen').onclick = () => $('file').click();
 $('file').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
