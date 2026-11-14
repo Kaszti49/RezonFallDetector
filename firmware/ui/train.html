@@ -79,7 +79,7 @@
     </section>
     <section class="card">
       <div class="lab">Events from the device · click a row, then a label <span class="r"><span id="evCount"></span><button id="bClear">clear</button></span></div>
-      <div id="evwrap"><table><thead><tr><th>t (s)</th><th>class</th><th>peak</th><th>score</th><th>trk</th><th>sim</th><th>lnE</th><th>dur</th><th>nSub</th><th>rise</th><th>decay</th><th>band</th><th>fc</th><th>rel</th><th>label</th></tr></thead><tbody id="ev"></tbody></table></div>
+      <div id="evwrap"><table><thead><tr><th>t (s)</th><th>class</th><th>peak</th><th title="peak ÷ step level (impact-sized at relMin)">×lvl</th><th title="ms above 30 % of its own peak (fall at holdMin)">hold</th><th>score</th><th>trk</th><th>sim</th><th>lnE</th><th>dur</th><th>nSub</th><th>rise</th><th>decay</th><th>band</th><th>fc</th><th>rel</th><th>label</th></tr></thead><tbody id="ev"></tbody></table></div>
     </section>
   </div>
   <div>
@@ -88,6 +88,7 @@
       <div class="stats">
         <div><b id="sRate">–</b><span>samples / s</span></div><div><b id="sCrc">–</b><span>CRC errors / s</span></div><div><b id="sGain">–</b><span>gain</span></div>
         <div><b id="sBg">–</b><span>background mm/s</span></div><div><b id="sTh">–</b><span>step threshold</span></div><div><b id="sWalk">–</b><span>walkers tracked</span></div>
+        <div><b id="sLvl">–</b><span>step level mm/s</span></div><div><b id="sImp">–</b><span>impact needs mm/s</span></div>
       </div>
     </section>
     <section class="card">
@@ -148,8 +149,9 @@ function onLine(l) {
       if (+p[3] > 0 && +p[3] !== gainV) { gainV = +p[3]; resetSignal(); $('gain').value = Math.round(Math.log2(gainV)); }
       $('sGain').textContent = '×' + gainV; if (p[4] !== undefined) tBase = +p[4] - n;
       if (p[5] !== undefined) { $('sBg').textContent = (+p[5]).toFixed(3); $('sTh').textContent = (+p[6]).toFixed(3); $('sWalk').textContent = p[7]; }
+      if (p[9] !== undefined) { $('sLvl').textContent = (+p[8]).toFixed(2); $('sImp').textContent = (+p[9]).toFixed(2); }
       break;
-    case 'E': addEvent({ id: +p[1], tOn: +p[2], tPk: +p[3], dur: +p[4], cls: p[5], track: +p[6], flags: +p[7], score: +p[8], sim: +p[9], peak: +p[10], peakS: +p[11], bg: +p[12], x: p.slice(13).map(Number), label: '' }); break;
+    case 'E': addEvent({ id: +p[1], tOn: +p[2], tPk: +p[3], dur: +p[4], cls: p[5], track: +p[6], flags: +p[7], score: +p[8], sim: +p[9], peak: +p[10], peakS: +p[11], bg: +p[12], x: p.slice(13, 22).map(Number), hold: p[22] === undefined ? NaN : +p[22], rel: p[23] === undefined ? NaN : +p[23], label: '' }); break;
     case 'F': log(`FALL-shaped event at ${(+p[1] / 1000).toFixed(2)} s, score ${p[3]}`); break;
     case 'U': log(`got up (new steady rhythm, track ${p[2]})`); break;
     case 'A': $('state').textContent = p[1] === 'WATCH' ? '' : 'alarm: ' + p[1]; $('state').style.color = p[1] === 'OK' ? 'var(--ok)' : 'var(--amber)'; break;
@@ -168,7 +170,7 @@ function addEvent(e) {
 }
 function fillRow(e) {
   const x = e.x, f = (v, d) => (v === undefined || isNaN(v)) ? '' : v.toFixed(d);
-  e.tr.innerHTML = `<td>${(e.tOn / 1000).toFixed(2)}</td><td class="c-${e.cls}">${e.cls}${e.flags & 4 ? ' ?' : ''}</td><td>${f(e.peak, 3)}</td><td>${f(e.score, 1)}</td><td>${e.track < 0 ? '' : e.track}</td><td>${e.sim ? f(e.sim, 2) : ''}</td>` +
+  e.tr.innerHTML = `<td>${(e.tOn / 1000).toFixed(2)}</td><td class="c-${e.cls}">${e.cls}${e.flags & 4 ? ' ?' : ''}</td><td>${f(e.peak, 3)}</td><td>${f(e.rel, 1)}</td><td>${e.hold > 0 ? f(e.hold * 1000, 0) : ''}</td><td>${f(e.score, 1)}</td><td>${e.track < 0 ? '' : e.track}</td><td>${e.sim ? f(e.sim, 2) : ''}</td>` +
     `<td>${f(x[1], 1)}</td><td>${f(x[2], 3)}</td><td>${f(x[3], 0)}</td><td>${f(x[4], 3)}</td><td>${f(x[5], 3)}</td><td>${f(x[6], 2)}</td><td>${f(x[7], 1)}</td><td>${f(x[8], 2)}</td><td>${e.label}</td>`;
 }
 function select(e) {
@@ -201,8 +203,9 @@ $('bRec').onclick = () => {
 $('bClear').onclick = () => { events.length = 0; marks.length = 0; sel = null; viewAt = null; n = 0; $('ev').innerHTML = ''; $('evCount').textContent = ''; };
 
 // ---------------------------------------------------------------- settings
-const PARAMS = [['stepMin', 'Step minimum (mm/s)'], ['impactMin', 'Impact minimum (mm/s)'], ['kOn', 'Start: × background variance'], ['scoreMin', 'Fall score threshold'],
-  ['walkerMargin', 'Impact ≥ × walkers’ steps'], ['stepRef', 'Typical step peak (mm/s)'], ['segMode', 'End rule (0 variance, 1 60 % of peak)'], ['ringMs', 'Ringing ignored (ms)'], ['simMin', 'Track: min. similarity'], ['volume', 'Voice volume (%)']];
+const PARAMS = [['rule', 'Fall rule (0 absolute, 1 normalised)'], ['relMin', 'Impact ≥ × step level (rule 1)'], ['holdMin', 'Fall: stays ≥ 30 % of own peak (s)'],
+  ['stepMin', 'Step minimum (mm/s)'], ['impactMin', 'Impact minimum (mm/s; rule 1: floor)'], ['kOn', 'Start: × background variance'], ['scoreMin', 'Fall score threshold (rule 0)'],
+  ['walkerMargin', 'Impact ≥ × walkers’ steps'], ['stepRef', 'Typical step peak (mm/s; level when quiet)'], ['segMode', 'End rule (0 variance, 1 60 % of peak)'], ['ringMs', 'Ringing ignored (ms)'], ['simMin', 'Track: min. similarity'], ['volume', 'Voice volume (%)']];
 PARAMS.forEach(([k, t]) => { const d = document.createElement('div'); d.className = 'row'; d.innerHTML = `${t} <input data-k="${k}" inputmode="decimal">`; d.firstElementChild.onchange = ev => send(`!set ${k} ${ev.target.value}`); $('params').appendChild(d); });
 $('gain').onchange = e => send('G' + e.target.value);
 $('profile').onchange = e => send('!profile ' + e.target.value);

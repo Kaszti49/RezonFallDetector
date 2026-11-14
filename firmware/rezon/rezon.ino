@@ -53,6 +53,9 @@ using namespace rezon;
 #define PIN_SIM_RX 18
 #define BAUD 460800
 #define SIM_BAUD 115200
+// ADC input the SM-24 is screwed into. The wiring guide says CH1, but the CH1 terminal on our Click is missing a screw,
+// so the geophone sits on CH2 (2026-11-14). D lines are "D,<geophone>,<other channel>" either way.
+#define GEO_CH 2
 
 // ---------------------------------------------------------------- shared state
 static Detector det;                      // only the sampling task touches it, others go through detMux
@@ -120,7 +123,9 @@ static void samplingTask(void *) {
     if (!adcRunning) continue;
     frame(0, 0, rx);
     if (crc16(rx, 9) != (uint16_t)((rx[9] << 8) | rx[10])) { crcErrors++; continue; }      // a glitch never reaches the detector
-    const int32_t c1 = s24(rx + 3), c2 = s24(rx + 6);
+    // c1 is always the GEOPHONE channel: the detector, the D lines, the pages and the replay tools all read it.
+    const int32_t a1 = s24(rx + 3), a2 = s24(rx + 6);
+    const int32_t c1 = GEO_CH == 2 ? a2 : a1, c2 = GEO_CH == 2 ? a1 : a2;
     const uint16_t h = ringHead, nx = (h + 1) & 2047;
     if (nx != ringTail) { ring[h][0] = c1; ring[h][1] = c2; ringHead = nx; } else dropped++;
     xSemaphoreTake(detMux, portMAX_DELAY);
@@ -242,6 +247,8 @@ static Param params[] = {
   { "scoreMin", &det.cfg.scoreMin, nullptr }, { "walkerMargin", &det.cfg.walkerMargin, nullptr }, { "stepRef", &det.cfg.stepRef, nullptr },
   { "simMin", &det.cfg.simMin, nullptr }, { "segMode", nullptr, &det.cfg.segMode }, { "ringMs", nullptr, &det.cfg.ringMs },
   { "impactWinMs", nullptr, &det.cfg.impactWinMs }, { "getUpSteps", nullptr, &det.cfg.getUpSteps }, { "volume", nullptr, &volumePct },
+  { "rule", nullptr, &det.cfg.rule }, { "relMin", &det.cfg.relMin, nullptr }, { "holdMin", &det.cfg.holdMin, nullptr },
+  { "holdFrac", &det.cfg.holdFrac, nullptr }, { "levelMs", nullptr, &det.cfg.levelMs }, { "levelGapMs", nullptr, &det.cfg.levelGapMs },
 };
 static void printParams() {
   for (auto &p : params) { if (p.f) Serial.printf("P,%s,%.4g\n", p.name, *p.f); else Serial.printf("P,%s,%d\n", p.name, *p.i); }
@@ -390,8 +397,8 @@ void loop() {
 
   if (now - lastStat >= 1000) {
     const uint32_t sc = sampleCount, e = crcErrors; crcErrors = 0;
-    Serial.printf("S,%lu,%lu,%d,%lu,%.4f,%.4f,%d\n", (unsigned long)((sc - lastSamples) * 1000UL / (now - lastStat)), (unsigned long)e, 1 << gainCode,
-                  (unsigned long)det.nowMs(), det.background(), det.threshold(), det.walkers());
+    Serial.printf("S,%lu,%lu,%d,%lu,%.4f,%.4f,%d,%.4f,%.4f\n", (unsigned long)((sc - lastSamples) * 1000UL / (now - lastStat)), (unsigned long)e, 1 << gainCode,
+                  (unsigned long)det.nowMs(), det.background(), det.threshold(), det.walkers(), det.level(), det.impactThreshold());
     if (dropped) { Serial.printf("# %lu samples not streamed (serial too slow); detection is not affected\n", (unsigned long)dropped); dropped = 0; }
     if (!adcRunning) Serial.println("# ADC not running. Fix the wiring, then send R.");
     lastSamples = sc; lastStat = now;

@@ -4,7 +4,7 @@
 //
 //   replay [options] file...
 //     --seg 0|1          end rule: 0 = variance (3x / 1.5x background), 1 = 60 % of peak (default)
-//     --set name=value   override a Config field (stepMin, impactMin, kOn, kOff, simMin, scoreMin, walkerMargin, ...)
+//     --set name=value   override a Config field (stepMin, impactMin, kOn, kOff, simMin, scoreMin, walkerMargin, rule, relMin, holdMin, ...)
 //     --gain N           gain for files that do not say (default 4; recording 10-00-51 is 32)
 //     --quiet            summary only
 //     --events out.tsv   write one row per event (for labelling and tools/fit)
@@ -95,7 +95,7 @@ static bool setCfg(Config &c, const std::string &kv) {
 #define F(n) if (k == #n) { c.n = (decltype(c.n))v; return true; }
   F(sens) F(gain) F(segMode) F(kOn) F(kOff) F(stepMin) F(dueDrop) F(endFrac) F(riseK) F(refractMs) F(maxStepMs) F(impactWinMs) F(maxEventMs)
   F(impactMin) F(walkerMargin) F(scoreMin) F(stepRef) F(periodMin) F(periodMax) F(timeTol) F(simMin) F(confirmSteps) F(expirePeriods)
-  F(doubleMs) F(ringMs) F(getUpSteps) F(floorDur) F(floorCentroid)
+  F(doubleMs) F(ringMs) F(getUpSteps) F(floorDur) F(floorCentroid) F(rule) F(relMin) F(levelMs) F(levelGapMs) F(holdMin) F(holdFrac)
 #undef F
   return false;
 }
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
     fprintf(ev, "file\tid\tt_s\tdur_ms\tclass\ttrack\tflags\tscore\tsim\tpeakI\tpeakS\tbg");
     for (int i = 0; i < NFEAT; i++) fprintf(ev, "\t%s", FEAT_NAME[i]);
     for (int i = 0; i < NSIGV; i++) fprintf(ev, "\ts%d", i);
-    fprintf(ev, "\tlabel\n");
+    fprintf(ev, "\tlabel\thold\trel\tlevel\n");
   }
   FILE *lg = logPath.empty() ? nullptr : fopen(logPath.c_str(), "wb");
 
@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
           const Event &e = o.ev;
           cnt[e.cls]++; evs.push_back(e);
           if (quiet) continue;
-          printf("%8.3f  %-9s trk %2d  pk %7.3f  step %6.3f  score %6.2f  sim %5.2f  dur %4lu ms |", e.tOn / 1000.0, CLS_NAME[e.cls], (int)e.track, e.peakI, e.peakS, e.score, e.sim, (unsigned long)(e.tEnd - e.tOn));
+          printf("%8.3f  %-9s trk %2d  pk %7.3f  step %6.3f  lvl %6.3f  x%5.1f  hold %3.0f ms  score %6.2f  sim %5.2f  dur %4lu ms |", e.tOn / 1000.0, CLS_NAME[e.cls], (int)e.track, e.peakI, e.peakS, e.level, e.rel, e.hold * 1000, e.score, e.sim, (unsigned long)(e.tEnd - e.tOn));
           printf(" E %5.1f d %.3f n %d r %.3f dc %.3f br %5.2f fc %4.1f rel %5.2f%s%s%s%s\n", e.x[F_LNENERGY], e.x[F_DUR], (int)e.x[F_NSUB], e.x[F_RISE], e.x[F_DECAY], e.x[F_BANDRATIO], e.x[F_CENTROID], e.x[F_RELPEAK],
                  (e.flags & FL_GUESS) ? " GUESS" : "", (e.flags & FL_DOUBLE) ? " double" : "", (e.flags & FL_CUT) ? " cut" : "", (e.flags & FL_DUE) ? " due" : "");
         } else {
@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
       fprintf(ev, "%s\t%lu\t%.3f\t%lu\t%s\t%d\t%u\t%.3f\t%.3f\t%.4f\t%.4f\t%.4f", r.name.c_str(), (unsigned long)e.id, e.tOn / 1000.0, (unsigned long)(e.tEnd - e.tOn), CLS_NAME[e.cls], (int)e.track, (unsigned)e.flags, e.score, e.sim, e.peakI, e.peakS, e.bg);
       for (int i = 0; i < NFEAT; i++) fprintf(ev, "\t%.5f", e.x[i]);
       for (int i = 0; i < NSIGV; i++) fprintf(ev, "\t%.5f", e.sigRaw[i]);
-      fprintf(ev, "\t%s\n", lab[k].c_str());
+      fprintf(ev, "\t%s\t%.3f\t%.3f\t%.4f\n", lab[k].c_str(), e.hold, e.rel, e.level);
     }
     int onTrack = 0;
     for (auto &e : evs) if ((e.cls == C_STEP || e.cls == C_BYSTANDER || e.cls == C_NEWSTEP) && e.track >= 0) onTrack++;

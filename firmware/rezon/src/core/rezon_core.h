@@ -74,10 +74,20 @@ struct Config {
   int   impactWinMs = 900;     // an impact-sized event is analysed over this window from its onset
   int   maxEventMs = 2000;     // absolute cap (variance rule)
   // ---- Layer 4
-  float impactMin = 0.30f;     // hard gate 1: impact-path peak, mm/s
+  // rule 0 (absolute): impact-sized = peak >= impactMin, fall-shaped = score >= scoreMin.
+  // rule 1 (normalised, distance-free): impact-sized = peak >= relMin x the step level just heard (and >= impactMin as a floor),
+  //   fall-shaped = the impact envelope stays >= holdFrac of ITS OWN peak for at least holdMin. A step near the sensor is loud but
+  //   no louder than the walking around it; a fall far away is quiet but much louder than that person's own steps, and it lasts.
+  int   rule = 1;
+  float impactMin = 0.30f;     // hard gate 1: impact-path peak, mm/s (rule 1: only an absolute floor)
   float walkerMargin = 1.5f;   // hard gate 2: peak >= margin x sum of the confirmed walkers' typical amplitudes
-  float scoreMin = 0.0f;       // fall-shaped when score >= this
-  float stepRef = 0.10f;       // typical step peak when nobody is tracked (set by calibration), mm/s
+  float scoreMin = 0.0f;       // rule 0: fall-shaped when score >= this
+  float stepRef = 0.10f;       // typical step peak when nobody is tracked (set by calibration), mm/s. Rule 1: step level when no steps were heard
+  float relMin = 4.0f;         // rule 1: impact-sized when the peak is at least this many times the step level
+  int   levelMs = 8000;        // rule 1: step level = second-loudest step-like event of this window ...
+  int   levelGapMs = 1000;     // ... leaving out the last second (a fall often starts with a stumble or a knee: that must not lift it)
+  float holdMin = 0.25f;       // rule 1: fall-shaped when the impact envelope stays >= holdFrac x its peak this long (s) ...
+  float holdFrac = 0.30f;      // ... counted from 300 ms before to 600 ms after the peak
   // ---- Layer 5
   float periodMin = 0.30f, periodMax = 1.60f;   // seconds between footfalls
   float timeTol = 0.25f;       // a step fits a track within this share of its period
@@ -102,6 +112,9 @@ struct Event {
   float score;                 // w . z + bias
   float sim;                   // cosine similarity to the assigned track (0 if none)
   float bg;                    // step-path background amplitude at the onset, mm/s
+  float level;                 // step level at the onset (rule 1), mm/s
+  float rel;                   // peakI / level
+  float hold;                  // s the impact envelope stayed >= holdFrac x its peak (impact-sized events only, else 0)
   Cls cls;
   int8_t track;                // -1 = none
   uint8_t flags;
@@ -151,6 +164,8 @@ class Detector {
   float lastRaw() const { return v_; }         // offset removed, unfiltered, mm/s
   float background() const;                    // step-path background amplitude, mm/s
   float threshold() const { return thS_; }     // current step threshold, mm/s
+  float level() const;                         // step level: second-loudest step-like event from levelMs to levelGapMs ago (stepRef if none), mm/s
+  float impactThreshold() const;               // impact-path peak that makes an event impact-sized right now, mm/s
   const Track &track(int i) const { return tr_[i]; }
   int walkers() const;                         // confirmed tracks
 
@@ -176,7 +191,10 @@ class Detector {
   float bgS_, bgI_, bgBand_[NBANDS]; float thS_;
   // layer 2
   bool open_, impactSized_, earlySent_, due_;
-  uint32_t fOn_, fPk_; float pkES_, pkEI_, pkYI_, bgAtOn_; int quiet_;
+  uint32_t fOn_, fPk_; float pkES_, pkEI_, pkYI_, bgAtOn_, levelAtOn_, impThAtOn_; int quiet_;
+  static constexpr int NLEVEL = 16;            // recent step-like events: peak time (ms, 0 = empty) and impact-path peak
+  uint32_t lvT_[NLEVEL]; float lvP_[NLEVEL]; int lvPos_;
+  float holdOf(uint32_t fPk, uint32_t fEnd) const;
   uint32_t lastPkMs_; bool dueOn_;
   void frameDone();
   void closeEvent(uint32_t fEnd, bool cut);

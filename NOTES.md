@@ -312,3 +312,29 @@ Device wired, on USB (COM4, CH343 = the DevKit's UART port). `firmware/rezon` co
 
 **Not verified (needs eyes, ears and hands)**
 - LED colour, the two placeholder tones on the speaker, the button, a tap on the table, and `train.html` connecting (Web Serial needs a click on the port chooser).
+
+## Normalised fall rule from the stage test (2026-11-14)
+
+Kaszti's stage recording (`uploads/session_2026-11-14T01-41-28.log`, copied to `firmware/data/`, labels in `labels.tsv`): walking near 0–11 s, mid 12–30 s, far 31–43 s; falls near 43.7 s / mid 51.5 s / far 60.4 s; then 3 jumps (64.3, 70.1, 74.8 s). Gain ×2. Settings on the device were walkerMargin 1.5, impactMin 30, stepRef 8.
+Kaszti's goal: a fall at the far end of the room must alarm, a hard step next to Rezon must not, even when the step is louder.
+
+**What the old absolute rule did:** the far fall (impact-path peak ≈ 19 mm/s) never reached impactMin 30, and the 250 ms refractory swallowed its main peak, so it was split into "steps". Two jumps were flagged as falls. Near/mid falls and all jumps clip the ADC at gain ×2.
+
+**Rule 1 (normalised), now the default (`rule = 1`):**
+1. Impact-sized only when the peak ≥ `relMin` (4) × the **step level** = the second-loudest step-like event from 8 s to 1 s before the onset (`levelMs`, `levelGapMs`; `stepRef` when none). The last second is left out because each fall started with smaller hits (stumble/knee) that otherwise raised the level. `impactMin` is now only an absolute floor.
+2. Fall-shaped only when the impact envelope stays ≥ 30 % of its own peak (`holdFrac`) for ≥ `holdMin` (0.25 s) within −300…+600 ms of the peak. Impact events stay open until 600 ms after the peak for this.
+Both numbers ignore distance: a near step is no louder than the walking around it, and a far fall is far louder than that person's own steps and lasts.
+
+**Results (replay):** stage session 3/3 falls (×23.8 / ×15.4 / ×9.3, hold 365 / 315 / 425 ms), 3/3 jumps rejected (hold 165–195 ms), loudest non-impact event ×3.3. Stable for relMin 4–8 and holdMin 0.20–0.30. Old recordings: walking-only still 0 alarms; 2 of the 7 *provisional* falls are now "impact" (hold 125 and 145 ms; one is 1.8 s after a detected fall). Mix test (walking added): 30/42 at ×1, 33/35 at ×2, 2 extra alarms in total.
+Rule 0 (old absolute rule) is still there: `!set rule 0`.
+
+**New settings:** rule, relMin, holdMin, holdFrac, levelMs, levelGapMs (`!set`, train page). Protocol: E lines end with `,hold,rel,level`; S lines end with `,level,impactThreshold`. The train page shows ×lvl and hold per event, plus the step level.
+
+**Weak points / open**
+- One recording, one person, one floor: 3 falls and 3 jumps. Needs more falls (different people, sitting down, dropped objects) before it is trusted.
+- Two people: a loud walker near Rezon raises the level and can hide a far fall of someone who was not walking.
+- Clipping at gain ×2 lengthens the measured hold of near events (falls and jumps alike). Try gain ×1 on stage and record again.
+- For the stage, set `impactMin` back to a floor (6 mm/s fits this floor), not 30.
+
+**Flashed 2026-11-14.** The board now enumerates as **COM15** (CH343); COM4 is a Bluetooth port on this laptop, so uploads to COM4 time out. Device reports rule 1 and the new settings. Settings kept in flash: stepMin 1.5, impactMin 18, walkerMargin 1.5, stepRef 8, gain ×2. Replay with exactly these: 3/3 falls, 3/3 jumps rejected. The far fall's peak (19.1) is only just above impactMin 18. Suggested: impactMin 6.
+- impactMin set to 6 and stored in flash (2026-11-14), confirmed with !get.

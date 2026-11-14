@@ -13,6 +13,7 @@ static const float BAND_LO[NBANDS] = { 10.f, 20.f, 30.f, 45.f };
 static const float BAND_HI[NBANDS] = { 20.f, 30.f, 45.f, 65.f };
 static const float BAND_FC[NBANDS] = { 14.14f, 24.49f, 36.74f, 54.08f };   // geometric centres
 static const uint32_t WARMUP_MS = 1500;   // filters and background followers settle: no events before this
+#define FRM(f) fr_[(f) % NFRAMES]
 
 static inline float maxf(float a, float b) { return a > b ? a : b; }
 static inline float minf(float a, float b) { return a < b ? a : b; }
@@ -41,7 +42,8 @@ void Detector::reset() {
   memset(fr_, 0, sizeof fr_); nFrames_ = 0; memset(&acc_, 0, sizeof acc_); accN_ = 0;
   memset(vS_, 0, sizeof vS_); memset(vI_, 0, sizeof vI_); vPos_ = 0; vSsum_ = vIsum_ = 0;
   bgS_ = bgI_ = 0.01f * 0.01f / 2; for (int k = 0; k < NBANDS; k++) bgBand_[k] = 0; thS_ = cfg.stepMin;
-  open_ = impactSized_ = earlySent_ = due_ = false; fOn_ = fPk_ = 0; pkES_ = pkEI_ = pkYI_ = bgAtOn_ = 0; quiet_ = 0;
+  open_ = impactSized_ = earlySent_ = due_ = false; fOn_ = fPk_ = 0; pkES_ = pkEI_ = pkYI_ = bgAtOn_ = levelAtOn_ = impThAtOn_ = 0; quiet_ = 0;
+  memset(lvT_, 0, sizeof lvT_); memset(lvP_, 0, sizeof lvP_); lvPos_ = 0;
   lastPkMs_ = 0; dueOn_ = false;
   nextId_ = 1; memset(tr_, 0, sizeof tr_);
   fallActive_ = false; ringDone_ = true; fallT_ = 0; lastImpactT_ = 0; lastImpactPk_ = 0;
@@ -61,6 +63,37 @@ float Detector::ale(float x) {
 }
 
 float Detector::background() const { return sqrtf(2.f * bgS_); }
+
+// Step level for the normalised rule: the second-loudest step-like event from levelMs to levelGapMs ago. The second, so that
+// one odd loud step does not lift it; one event alone counts as it is; none at all falls back to stepRef. The last second is left
+// out because a fall often begins with smaller hits (stumble, knee) that would otherwise raise the level just before the big one.
+float Detector::level() const {
+  float a = 0, b = 0; int c = 0;
+  for (int i = 0; i < NLEVEL; i++) {
+    if (!lvT_[i] || n_ - lvT_[i] > (uint32_t)cfg.levelMs || n_ - lvT_[i] < (uint32_t)cfg.levelGapMs) continue;
+    c++; const float p = lvP_[i];
+    if (p > a) { b = a; a = p; } else if (p > b) b = p;
+  }
+  return c == 0 ? cfg.stepRef : (c == 1 ? a : b);
+}
+
+float Detector::impactThreshold() const {
+  return cfg.rule == 1 ? maxf(cfg.impactMin, cfg.relMin * level()) : cfg.impactMin;
+}
+
+// How long the impact envelope stays at or above holdFrac of its own peak, from 300 ms before to 600 ms after the peak frame.
+// It does not change when the whole event is scaled, so a far fall and a near fall give the same number.
+float Detector::holdOf(uint32_t fPk, uint32_t fEnd) const {
+  const uint32_t pre = 300 / HOP, post = 600 / HOP;
+  uint32_t a = fPk >= pre ? fPk - pre : 0, b = fPk + post < fEnd ? fPk + post : fEnd;
+  if (nFrames_ - a >= (uint32_t)NFRAMES) a = nFrames_ - NFRAMES + 1;          // older frames are overwritten already
+  float pk = 0;
+  for (uint32_t f = a; f <= b; f++) if (FRM(f).eI > pk) pk = FRM(f).eI;
+  if (pk <= 0) return 0;
+  int k = 0;
+  for (uint32_t f = a; f <= b; f++) if (FRM(f).eI >= cfg.holdFrac * pk) k++;
+  return k * HOP / 1000.f;
+}
 
 int Detector::push(int32_t counts) {
   if (cfg.gain != scaleGain_ || cfg.sens != scaleSens_) {       // counts -> mm/s: 1.2 V reference, 24 bit, gain, mV per mm/s
@@ -103,7 +136,6 @@ bool Detector::poll(Note &out) {
 }
 
 // ---------------------------------------------------------------- layer 2: events
-#define FRM(f) fr_[(f) % NFRAMES]
 
 void Detector::frameDone() {
   const uint32_t f = nFrames_;
@@ -139,19 +171,21 @@ void Detector::frameDone() {
     } else refS = refI = 0;
     const float stat = cfg.segMode == 0 ? sqrtf(2.f * Vs) : fr.eS;
     const bool startS = stat > thS_ && pS > cfg.riseK * refS;
-    const bool startI = fr.eI > 0.7f * cfg.impactMin && pI > cfg.riseK * refI;
+    const float impTh = impactThreshold();
+    const bool startI = fr.eI > 0.7f * impTh && pI > cfg.riseK * refI;
     const bool refr = cfg.segMode == 1 && lastPkMs_ && nowMs - lastPkMs_ < (uint32_t)cfg.refractMs && !startI;
     if ((startS || startI) && !refr) {
       open_ = true; impactSized_ = earlySent_ = false; quiet_ = 0; dueOn_ = due_ && !startI;
       fOn_ = f; fPk_ = f; pkES_ = fr.eS; pkEI_ = fr.eI; pkYI_ = fr.pkI; bgAtOn_ = sqrtf(2.f * bgS_);
+      levelAtOn_ = level(); impThAtOn_ = impTh;                    // frozen for the whole event
     }
     return;
   }
   // event is open
-  if (fr.eI > pkEI_) { pkEI_ = fr.eI; if (impactSized_ || fr.pkI >= cfg.impactMin) fPk_ = f; }
-  if (fr.eS > pkES_) { pkES_ = fr.eS; if (!impactSized_ && fr.pkI < cfg.impactMin) fPk_ = f; }
+  if (fr.eI > pkEI_) { pkEI_ = fr.eI; if (impactSized_ || fr.pkI >= impThAtOn_) fPk_ = f; }
+  if (fr.eS > pkES_) { pkES_ = fr.eS; if (!impactSized_ && fr.pkI < impThAtOn_) fPk_ = f; }
   if (fr.pkI > pkYI_) pkYI_ = fr.pkI;
-  if (!impactSized_ && pkYI_ >= cfg.impactMin) impactSized_ = true;
+  if (!impactSized_ && pkYI_ >= impThAtOn_) impactSized_ = true;
   if (impactSized_ && !earlySent_ && pkYI_ >= cfg.walkerMargin * walkerSum()) { earlySent_ = true; emit(N_IMPACT_EARLY, pkYI_, nullptr); }
 
   const uint32_t durMs = (f - fOn_ + 1) * HOP;
@@ -160,7 +194,8 @@ void Detector::frameDone() {
     // an impact is analysed over a fixed window from its onset (sub-impacts, decay), or until the floor is quiet again
     if (Vs < cfg.kOff * bgS_ && fr.eI < 0.1f * pkEI_) quiet_++; else quiet_ = 0;
     if (quiet_ >= 6) close = true;
-    else if (durMs >= (uint32_t)cfg.impactWinMs) { close = true; cut = true; }
+    // rule 1 also needs 600 ms after the peak for the hold measure
+    else if ((durMs >= (uint32_t)cfg.impactWinMs && (cfg.rule == 0 || (f - fPk_) * HOP >= 600)) || durMs >= (uint32_t)cfg.maxEventMs) { close = true; cut = true; }
   } else if (cfg.segMode == 0) {
     if (Vs < cfg.kOff * bgS_) quiet_++; else quiet_ = 0;
     if (quiet_ >= 2) close = true;
@@ -175,7 +210,7 @@ void Detector::frameDone() {
 void Detector::closeEvent(uint32_t fEnd, bool cut) {
   open_ = false;
   Event e; memset(&e, 0, sizeof e);
-  e.id = nextId_++; e.track = -1; e.bg = bgAtOn_;
+  e.id = nextId_++; e.track = -1; e.bg = bgAtOn_; e.level = levelAtOn_;
   if (cut) e.flags |= FL_CUT;
   if (dueOn_) e.flags |= FL_DUE;
   const uint32_t pre = fOn_ >= 6 ? 6 : fOn_;                     // 30 ms before the trigger: the rise started there
@@ -184,7 +219,11 @@ void Detector::closeEvent(uint32_t fEnd, bool cut) {
   e.tOn = fOn_ * HOP; e.tPk = fPk_ * HOP; e.tEnd = (fEnd + 1) * HOP;
   lastPkMs_ = e.tPk;
   features(e, f0, fEnd);
+  e.rel = e.peakI / maxf(levelAtOn_, 1e-6f);
+  e.hold = impactSized_ ? holdOf(fPk_, fEnd) : 0;
   classify(e);
+  // every step-sized event that is not ringing or noise feeds the step level (impact-sized ones never do)
+  if (!(e.flags & FL_GATE_PEAK) && e.cls != C_RING && e.cls != C_NOISE) { lvT_[lvPos_] = e.tPk ? e.tPk : 1; lvP_[lvPos_] = e.peakI; lvPos_ = (lvPos_ + 1) % NLEVEL; }
   emit(N_EVENT, 0, &e);
   if (e.cls == C_FALL) emit(N_FALL, e.score, &e);
 }
@@ -391,7 +430,7 @@ void Detector::classify(Event &e) {
   const float wsum = walkerSum();
   e.x[F_RELPEAK] = logf(maxf(e.peakI, 1e-5f) / (maxAmp > 0 ? maxAmp : cfg.stepRef));
   e.score = score(e.x);
-  if (e.peakI >= cfg.impactMin) e.flags |= FL_GATE_PEAK;
+  if (e.peakI >= impThAtOn_) e.flags |= FL_GATE_PEAK;                 // rule 0: impactMin; rule 1: relMin x step level (>= impactMin)
   if (e.peakI >= cfg.walkerMargin * wsum) e.flags |= FL_GATE_WALKER;
   const bool inRing = lastImpactPk_ > 0 && e.tOn - lastImpactT_ < (uint32_t)cfg.ringMs && e.peakI < 0.5f * lastImpactPk_;
 
@@ -399,7 +438,7 @@ void Detector::classify(Event &e) {
     if (inRing) { e.cls = C_RING; return; }
     lastImpactT_ = e.tOn; lastImpactPk_ = e.peakI;
     if (!(e.flags & FL_GATE_WALKER)) { e.cls = C_IMPACT; e.flags |= FL_GUESS; return; }   // could be two walkers landing together
-    if (e.score < cfg.scoreMin) { e.cls = C_IMPACT; return; }
+    if (cfg.rule == 1 ? e.hold < cfg.holdMin : e.score < cfg.scoreMin) { e.cls = C_IMPACT; return; }   // rule 1: too short for its own peak (jump, stomp, drop)
     e.cls = C_FALL;
     for (int i = 0; i < MAX_TRACKS; i++) {
       Track &t = tr_[i]; if (!t.used) continue;
