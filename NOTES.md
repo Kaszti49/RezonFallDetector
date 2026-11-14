@@ -253,3 +253,62 @@ All lines fit. **VO-03 is tight** (≈6.6 s in a 7 s slot) → read at a normal 
 - Prompt for the firmware session saved as `firmware/MASTER_PROMPT.md`. Explainer PDF: `Rezon_How_It_Works.pdf` (source `explainer_source/`).
 - Kaszti's decisions: fall score = feature vector · weights fitted offline on our recordings (device does vector maths only); one geophone; the button always cancels, walking cancels only as a NEW steady rhythm after the impact (people already walking never cancel); the prompt covers the whole firmware.
 - Research behind it: G-Fall (Shenzhen Univ.), Clemente et al. (Univ. of Georgia), FootprintID (CMU/Stanford, SM-24), Liu et al., Shao et al. No usable repo, Hugging Face model or public fall dataset for floor vibration was found.
+
+## Firmware phase 1: detection core, tools, two pages (2026-11-13)
+
+Kaszti's answers: stage link = USB first, Wi-Fi later as an option · speaker gets NEW clips with the blob's words („Minden rendben van?" / „Hívok segítséget!") · device not wired yet, laptop tests only · the "I'm OK" button works in code but is not part of the stage flow.
+
+**What exists** (all in `firmware/`, nothing committed):
+- `rezon/src/core/` portable C++ (no Arduino includes): `rezon_core` (layers 1–6 of the master prompt), `rezon_alarm.h` (sequence, home/stage profiles), `rezon_proto.h` (serial lines), `rezon_weights.h` (written by `tools/fit`).
+- `rezon/rezon.ino` ESP32-S3 firmware. Compiles with the IDE's arduino-cli (`esp32:esp32:esp32s3`, core 3.3.8): 389 kB flash, 79 kB RAM. **Never run on hardware.**
+- `tools/replay.cpp`, `tools/fit.cpp`, `build.bat`, `train.bat`, `mixtest.sh`. Built with the g++ already on this PC.
+- `ui/live.html` (stage screen) and `ui/train.html` (recording, labelling, settings). Single files, Web Serial, no internet.
+- `data/labels.tsv` (provisional), `data/demo_fall.log` (one real fall with alarm lines, for rehearsing `live.html`).
+
+**Decisions**
+- Detection runs only on the device. Pages draw and record; they never decide. Exception: `live.html` has a display-only impact trigger for streams without alarm lines (old practice sketch) and for the demo.
+- Events are analysed from 5 ms frames in a 4 s ring, so the work per sample is constant.
+- End rule: variance rule (3× / 1.5× background) and 60 %-of-peak rule both implemented (`segMode`). Both find the same 7 falls; the peak rule finds more steps in the soft-shoe recording (22 against 11) → default = peak rule.
+- An impact-sized event is analysed over a fixed 900 ms window (or until the floor is quiet). Decision arrives 0.3–0.7 s after the impact.
+- A start needs a rise (last 20 ms ≥ 2× the quietest 20 ms just before), so decaying floor ringing cannot start events.
+- Spectral features come from a 4-band filter bank (10–20, 20–30, 30–45, 45–65 Hz) with the background power subtracted.
+- Fit tool is C++ (no Python on this PC): class-balanced logistic regression, L2, sign-constrained, leave-one-recording-out.
+- Alarm order: question → countdown → "calling" clip → dial. The clip ends before dialling (power bank ≈ 1 A).
+
+**Differences from the master prompt, wiring guide wins**
+- No battery measurement (power bank build, R4/R5 dropped). Button uses the internal pull-up.
+- Amp is the ZK-502M with a volume knob, so the fixed −21 dB rule no longer applies: `volume` setting, default 10 %.
+- **Gain conflict:** the jumper guide says "gain 32 in firmware", the master prompt says 4. Gain 32 clips at ±1.8 mm/s and the recorded falls reach 3.9 mm/s. Firmware default = 4. Kaszti to confirm.
+
+**Results on the recordings (2026-11-13)**
+- Recordings 2 + 3: 7 of 7 impact-sized events flagged fall-shaped, 0 other alarms. Recording 4 (walking): 0 alarms.
+- Fit: 7 falls / 145 others, leave-one-recording-out 7/7, 0 false alarms. **Labels are provisional** (the 7 big impacts are assumed to be the "7 known falls") and the falls are 2× stronger than anything else, so this proves little.
+- Walking added on top (recording 4 at 5 offsets, 10 runs): 35/35 falls found, 0 extra alarms; added walking cancelled a fall in 1 run. With the walking doubled in level: 10 extra alarms in 10 runs.
+- Sub-impact count was 1 for every event, so that feature carries no weight yet.
+
+**Known weak points**
+- Walker tracking: soft-shoe steps sit at the threshold, signatures are noisy, few tracks get confirmed. So the "walkers" gate and bystander recognition rarely engage. Needs labelled walking recordings.
+- A NEW walker who starts after a fall cancels it like someone getting up (the prompt's own rule; one sensor cannot tell them apart).
+- Recording 1 (gain 32, clipped): 4 fall-shaped + 12 impacts between 2.7 and 10.5 s, nature unknown.
+
+**Open**
+- Kaszti: label the events (list in the chat), confirm gain 4, deliver the two voice clips (WAV), put the number in `firmware/rezon/secrets.h`.
+- Not written yet: calibration routine (`!cal`), clip converter, Wi-Fi link, hardware bring-up.
+
+## Firmware on the real device: first upload (2026-11-14)
+
+Device wired, on USB (COM4, CH343 = the DevKit's UART port). `firmware/rezon` compiled with arduino-cli (`esp32:esp32:esp32s3`, build in `firmware/build/`) and uploaded.
+
+**Measured over serial**
+- ADC: ID 0x2205, 998 samples/s, 0 CRC errors, 0 dropped lines at 460800 baud. Gain ×4.
+- Geophone channel (ch1): quiet, sd ≈ 390 counts (≈ 0.0007 mm/s), DC offset ≈ 26 400 counts. No events while nobody touched it. **Not yet tapped**, so the geophone itself is unproven.
+- ch2 is open and swings up to full scale. The firmware ignores it.
+- Settings (`!get`) answer; flash defaults are the compiled ones.
+- Alarm rehearsal (`!test`): ASK 1300 → WAIT 3000 → ANNOUNCE 1100 → CALL → FAIL → WATCH. FAIL is expected: no `secrets.h`, so it never dials.
+- **SIM868: no answer.** Diagnostic sketch (S3 pins 17/18/16): SIM TXD (GPIO18) floats (follows the pull-up and the pull-down), 0 bytes in both wire orders at 5 bauds, before and after a PWRKEY pulse. So the modem is off or unpowered, not a swapped RX/TX. First suspect: no 4.0 V at the PH2.0 plug (the guide has the rocker OFF while on USB, and the step-down hangs behind the rocker).
+
+**Bug fixed**
+- `!test` jumped straight from ASK to WAIT. `handleLine()` took its own `millis()`, 1 ms ahead of `loop()`'s `now`, so `tick()` saw a negative (wrapped) age. The command handler now gets `loop()`'s `now`. Falls and the button were not affected (they already used it).
+
+**Not verified (needs eyes, ears and hands)**
+- LED colour, the two placeholder tones on the speaker, the button, a tap on the table, and `train.html` connecting (Web Serial needs a click on the port chooser).

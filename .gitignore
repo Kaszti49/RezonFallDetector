@@ -3,3 +3,12 @@ dist
 .DS_Store
 .env
 
+
+# REZON firmware: phone number, build outputs, recorded sessions
+firmware/rezon/secrets.h
+firmware/tools/*.exe
+firmware/data/events.tsv
+firmware/build/
+
+# Blender auto-backups
+*.blend1
